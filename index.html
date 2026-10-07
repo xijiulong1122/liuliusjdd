@@ -1,0 +1,1946 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>水果多多</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: "Microsoft Yahei", -apple-system, BlinkMacSystemFont, sans-serif; background: #f0f0f0; margin: 0; padding: 8px; font-size: 15px; -webkit-tap-highlight-color: transparent; }
+        
+        /* 登录弹窗 */
+        .login-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 16px; }
+        .login-container { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 28px; width: 100%; max-width: 400px; }
+        .login-box { background: white; border-radius: 20px; padding: 24px 20px; }
+        .login-title { text-align: center; margin-bottom: 24px; }
+        .login-title h2 { color: #2c3e50; font-size: 26px; }
+        .login-title p { color: #777; font-size: 14px; }
+        .login-input-group { margin-bottom: 18px; }
+        .login-input-group label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 14px; }
+        .login-input-group input { width: 100%; padding: 14px 16px; border: 2px solid #e0e0e0; border-radius: 14px; font-size: 16px; }
+        .login-btn { width: 100%; padding: 16px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 14px; font-weight: 700; font-size: 17px; cursor: pointer; }
+        .login-error { color: #e74c3c; text-align: center; margin-top: 14px; display: none; font-size: 14px; }
+        .login-error.show { display: block; }
+        
+        /* 主布局 */
+        .main-layout { display: none; flex-direction: column; gap: 12px; max-width: 1600px; margin: 0 auto; }
+        .main-content { flex: 1; min-width: 0; }
+        .container { background: #fff; border: 1px solid #ccc; padding: 10px; width: 100%; border-radius: 16px; }
+        
+        /* 顶栏按钮 */
+        .top-bar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+        .top-bar button { padding: 10px 14px; cursor: pointer; background: #f5f5f5; border: none; border-radius: 30px; font-size: 14px; font-weight: 500; flex: 1 1 auto; min-width: 70px; }
+        .top-bar button:hover { background: #e0e0e0; }
+        .top-bar button.save-btn { background: #27ae60; color: white; }
+        .top-bar button.risk-btn { background: #e74c3c; color: white; }
+        .top-bar button.cancel-order-btn { background: #e67e22; color: white; }
+        
+        /* 客户信息 */
+        .customer-info { margin-bottom: 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; background: #fafafa; padding: 10px; border-radius: 14px; font-size: 14px; }
+        .customer-info input[type="text"] { padding: 8px 12px; border: 1px solid #ccc; border-radius: 30px; width: 80px; font-size: 14px; }
+        .customer-info label { display: flex; align-items: center; gap: 4px; font-size: 13px; }
+        .customer-info span { font-weight: 600; color: #2c3e50; }
+        .customer-info button { padding: 6px 14px; border: none; border-radius: 30px; background: #fee; color: #c0392b; font-weight: 600; font-size: 13px; }
+        
+        /* 号码表格区：手机端改为两列或单列 */
+        .table-area { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .col { display: flex; flex-direction: column; gap: 6px; }
+        .row { display: flex; align-items: center; gap: 6px; background: #f9f9f9; padding: 4px 6px; border-radius: 12px; }
+        .row span { width: 52px; font-weight: 700; font-size: 14px; flex-shrink: 0; }
+        .row input { flex: 1; padding: 10px 8px; border: 1px solid #ccc; border-radius: 10px; font-size: 15px; width: 100%; min-width: 0; }
+        .row input:focus { border-color: #667eea; outline: none; }
+        
+        /* 颜色 */
+        .red { color: #e74c3c; } .blue { color: #2980b9; } .green { color: #27ae60; }
+        
+        /* 汇总条 */
+        .summary { margin-top: 12px; padding: 12px 10px; border-top: 1px solid #eee; display: flex; flex-wrap: wrap; gap: 8px 15px; background: #f9f9f9; border-radius: 14px; align-items: center; font-size: 14px; }
+        .amount-item { font-weight: 700; }
+        .current-amount { color: #ff6600; }
+        .accumulate-amount { color: #0099ff; }
+        .data-code { margin-left: auto; font-size: 12px; color: #777; }
+        
+        /* 识别记录面板 */
+        .report-record-panel { margin-top: 14px; padding: 12px; background: #fef9e6; border-radius: 16px; border-left: 5px solid #ff9800; }
+        .record-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-weight: 700; color: #e67e22; font-size: 15px; }
+        .record-list { max-height: 300px; overflow-y: auto; font-size: 12px; }
+        .record-item { padding: 10px; border-bottom: 1px solid #ffe0b2; margin-bottom: 8px; background: #fffaf0; border-radius: 12px; }
+        .record-time { color: #666; font-size: 11px; display: block; margin-bottom: 6px; }
+        .record-amount { color: #ff6600; font-weight: 700; display: inline-block; margin-right: 8px; font-size: 14px; }
+        .record-line { color: #2c3e50; font-size: 12px; word-break: break-all; white-space: normal; line-height: 1.5; display: block; margin-top: 6px; padding: 6px 8px; background: #fff5e6; border-radius: 8px; border-left: 3px solid #ff9800; }
+        .record-line-text { font-family: monospace; color: #333; }
+        .record-line-total { color: #27ae60; font-weight: 700; margin-left: 8px; }
+        .record-grand-total { margin-top: 8px; padding-top: 5px; border-top: 1px dashed #ffcc80; text-align: right; font-weight: 700; color: #e67e22; }
+        .clear-record-btn { background: none; border: none; color: #e74c3c; cursor: pointer; font-size: 18px; padding: 0 6px; }
+        
+        /* 识别面板（右侧）手机端全宽 */
+        .recognize-panel { width: 100%; background: white; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); padding: 16px; margin-top: 6px; }
+        .recognize-panel-header { background: linear-gradient(135deg, #ff6b6b 0%, #ff8e8e 100%); margin: -16px -16px 0 -16px; padding: 18px 16px; border-radius: 20px 20px 0 0; color: white; }
+        .recognize-panel-header h3 { font-size: 18px; }
+        .recognize-panel-header p { font-size: 13px; opacity: 0.9; }
+        .format-hint { background: #f8f9fa; padding: 12px; border-radius: 14px; margin: 8px 0; border-left: 4px solid #ff6b6b; display: none; font-size: 13px; }
+        .format-hint.show { display: block; }
+        .recognize-input-area textarea { width: 100%; height: 140px; padding: 14px; border: 2px solid #e0e0e0; border-radius: 16px; font-family: monospace; resize: vertical; margin-bottom: 12px; font-size: 15px; }
+        .recognize-actions { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+        .btn-parse, .btn-paste, .btn-clear-panel { flex: 1 1 30%; padding: 14px 8px; border-radius: 40px; border: none; font-weight: 700; font-size: 15px; cursor: pointer; }
+        .btn-parse { background: #ff6b6b; color: white; }
+        .btn-paste { background: #3498db; color: white; }
+        .btn-clear-panel { background: #ecf0f1; }
+        .parse-result { padding: 12px; border-radius: 12px; background: #f0f9f0; color: #27ae60; display: none; text-align: center; font-weight: 600; }
+        .parse-result.show { display: block; }
+        .help-btn { background: #ffa500; color: white; border: none; border-radius: 30px; padding: 10px 14px; font-weight: 700; font-size: 14px; cursor: pointer; flex: 1; }
+        
+        /* 云端操作 */
+        .cloud-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+        .cloud-actions button { flex: 1 1 40%; padding: 12px 8px; border: none; border-radius: 40px; cursor: pointer; font-weight: 700; font-size: 13px; }
+        .cloud-actions .upload-btn { background: #27ae60; color: white; }
+        .cloud-actions .download-btn { background: #3498db; color: white; }
+        .cloud-actions .reset-btn { background: #95a5a6; color: white; }
+        .cloud-actions .config-btn { background: #e67e22; color: white; }
+        .cloud-status { font-size: 12px; color: #666; text-align: center; margin-top: 4px; }
+        
+        /* 通用弹窗适配 */
+        .token-modal, .risk-modal, .format-manager-modal, .cancel-modal, .modal-overlay, .reference-modal, .wave-modal, .history-modal, .detail-modal, .confirm-modal, .save-modal, .parse-error-modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.6); align-items: center; justify-content: center; z-index: 10050; padding: 12px; }
+        .token-content, .cancel-content, .risk-content, .format-manager-content, .modal-content, .reference-content, .wave-content, .history-content, .detail-content, .confirm-content, .save-content, .parse-error-content { background: white; width: 100%; max-width: 100%; max-height: 92vh; border-radius: 24px; display: flex; flex-direction: column; overflow: hidden; }
+        
+        /* Token弹窗 */
+        .token-content { max-width: 450px; padding: 20px; }
+        .token-header h3 { color: #e67e22; text-align: center; font-size: 20px; }
+        .token-input-group { margin-bottom: 18px; }
+        .token-input-group label { display: block; margin-bottom: 6px; font-weight: 600; }
+        .token-input-group input { width: 100%; padding: 14px; border: 2px solid #e0e0e0; border-radius: 14px; font-family: monospace; font-size: 15px; }
+        .token-hint { font-size: 12px; color: #999; margin-top: 4px; }
+        .token-actions { display: flex; gap: 12px; justify-content: flex-end; margin-top: 16px; }
+        .token-actions button { padding: 12px 24px; border-radius: 40px; border: none; font-weight: 700; font-size: 15px; }
+        .btn-save-token { background: #27ae60; color: white; }
+        .btn-cancel-token { background: #ecf0f1; }
+        .token-status { margin-top: 12px; padding: 10px; border-radius: 12px; font-size: 13px; display: none; }
+        .token-status.success { background: #d5f5e3; color: #27ae60; display: block; }
+        .token-status.error { background: #fadbd8; color: #e74c3c; display: block; }
+        
+        /* 撤单弹窗 */
+        .cancel-content { max-height: 90vh; }
+        .cancel-header { display: flex; justify-content: space-between; align-items: center; padding: 18px 20px; background: linear-gradient(135deg, #e67e22 0%, #d35400 100%); color: white; }
+        .cancel-header h3 { font-size: 18px; }
+        .cancel-close { font-size: 32px; cursor: pointer; line-height: 1; }
+        .cancel-body { padding: 14px; overflow-y: auto; flex: 1; }
+        .cancel-list { display: flex; flex-direction: column; gap: 12px; }
+        .cancel-order-card { background: #f8f9fa; border-radius: 16px; padding: 14px; border-left: 4px solid #e67e22; }
+        .cancel-order-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid #e0e0e0; flex-wrap: wrap; gap: 6px; }
+        .cancel-order-title { font-weight: 700; font-size: 15px; color: #e67e22; }
+        .cancel-order-time { font-size: 11px; color: #999; }
+        .cancel-order-details { margin: 8px 0; padding-left: 6px; }
+        .cancel-order-line-item { display: block; padding: 5px 0; border-bottom: 1px dashed #eee; font-family: monospace; font-size: 12px; }
+        .cancel-btn { background: #e74c3c; color: white; border: none; border-radius: 20px; padding: 8px 16px; font-size: 13px; font-weight: 600; }
+        .cancel-clear-all { background: #e74c3c; color: white; border: none; border-radius: 20px; padding: 8px 18px; font-size: 13px; font-weight: 600; }
+        
+        /* 风险评估弹窗 */
+        .risk-content { max-height: 95vh; }
+        .risk-header { display: flex; justify-content: space-between; align-items: center; padding: 18px 20px; background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); color: white; }
+        .risk-close { font-size: 32px; cursor: pointer; }
+        .risk-body { padding: 14px; overflow-y: auto; flex: 1; }
+        .risk-summary { background: #f8f9fa; border-radius: 16px; padding: 12px; margin-bottom: 16px; display: flex; flex-wrap: wrap; gap: 10px; text-align: center; justify-content: center; }
+        .risk-summary-item { flex: 1 1 40%; min-width: 100px; }
+        .risk-summary-label { font-size: 11px; color: #666; margin-bottom: 2px; }
+        .risk-summary-value { font-size: 16px; font-weight: 700; color: #e74c3c; }
+        .fruit-amount .risk-summary-value { color: #e67e22; }
+        .custom-risk-item .risk-summary-value { color: #2980b9; }
+        .win-count-item .risk-summary-value { color: #27ae60; }
+        .loss-count-item .risk-summary-value { color: #e74c3c; }
+        
+        .risk-buttons { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+        .risk-buttons button { padding: 10px 16px; border: none; border-radius: 40px; cursor: pointer; font-weight: 700; font-size: 13px; background: #3498db; color: white; flex: 1 0 auto; }
+        .risk-buttons .sort-btn { background: #9b59b6; }
+        .risk-buttons .copy-btn { background: #27ae60; }
+        
+        .risk-table-container { max-height: 400px; overflow-y: auto; border-radius: 12px; border: 1px solid #eee; }
+        .risk-table { width: 100%; border-collapse: collapse; font-size: 11px; min-width: 700px; }
+        .risk-table th { background: #f0f0f0; padding: 8px 4px; text-align: center; font-weight: 700; position: sticky; top: 0; border-bottom: 2px solid #ddd; white-space: nowrap; }
+        .risk-table td { padding: 6px 4px; text-align: center; border-bottom: 1px solid #eee; }
+        .risk-positive { color: #27ae60; font-weight: 700; }
+        .risk-negative { color: #e74c3c; font-weight: 700; }
+        .tail-input { width: 65px; padding: 6px 4px; border: 1px solid #ccc; border-radius: 8px; text-align: center; font-size: 12px; }
+        .copy-btn-small { background: #3498db; color: white; border: none; border-radius: 20px; padding: 4px 10px; font-size: 11px; margin: 0 2px; }
+        
+        /* 格式管理器弹窗 */
+        .format-manager-content { max-height: 92vh; }
+        .format-manager-header { display: flex; justify-content: space-between; align-items: center; padding: 18px 20px; background: #2c3e50; color: white; }
+        .format-manager-close { font-size: 32px; cursor: pointer; }
+        .format-manager-body { padding: 14px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 16px; }
+        .rules-section { width: 100%; }
+        .amount-keyword-card, .rule-card { background: #fef9e6; border-radius: 20px; padding: 16px; margin-bottom: 14px; border: 1px solid #ffd966; }
+        .amount-keyword-title { font-weight: 700; font-size: 16px; margin-bottom: 12px; color: #2980b9; }
+        .amount-keyword-input-group { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+        .amount-keyword-input-group input, .amount-keyword-input-group select { flex: 1 1 120px; padding: 10px 14px; border-radius: 40px; border: 1px solid #ccc; font-size: 14px; }
+        .btn-add-rule { background: #27ae60; color: white; border: none; padding: 10px 18px; border-radius: 40px; font-weight: 600; font-size: 14px; }
+        .restore-default { background: #3498db; color: white; border: none; padding: 10px 18px; border-radius: 40px; font-weight: 600; font-size: 14px; }
+        .amount-keyword-list { background: white; border-radius: 16px; border: 1px solid #ddd; max-height: 180px; overflow-y: auto; }
+        .amount-keyword-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-bottom: 1px solid #ecf0f1; }
+        .amount-keyword-text { font-family: monospace; background: #e8f4fd; padding: 4px 12px; border-radius: 30px; font-weight: 700; color: #2980b9; }
+        .amount-keyword-mode { font-size: 11px; padding: 3px 10px; border-radius: 20px; margin-left: 6px; }
+        .mode-auto { background: #ecf0f1; color: #7f8c8d; }
+        .mode-average { background: #d5f5e3; color: #27ae60; }
+        .mode-per-number { background: #fdebd0; color: #e67e22; }
+        .del-amount-keyword { background: none; border: none; font-size: 18px; color: #e74c3c; cursor: pointer; }
+        .flex-group { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 10px; }
+        .flex-group input { flex: 2; min-width: 140px; padding: 10px 14px; border-radius: 40px; border: 1px solid #ccc; }
+        .separator-hint { font-size: 12px; color: #e67e22; }
+        .number-selector-section { width: 100%; background: #f8f9fa; border-radius: 20px; padding: 16px; border: 1px solid #ddd; }
+        .number-selector { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; max-height: 260px; overflow-y: auto; padding: 10px; background: white; border-radius: 16px; }
+        .num-checkbox { display: flex; align-items: center; gap: 4px; padding: 4px; border-radius: 8px; cursor: pointer; font-size: 12px; }
+        .num-checkbox input { width: 18px; height: 18px; }
+        .selected-info { font-size: 12px; color: #666; margin-top: 8px; text-align: right; }
+        .btn-save-numbers { background: #27ae60; color: white; border: none; padding: 14px; border-radius: 40px; font-weight: 700; font-size: 15px; margin-top: 12px; width: 100%; }
+        
+        /* 其他弹窗微调 */
+        .modal-content, .reference-content, .wave-content, .history-content, .detail-content, .confirm-content, .save-content { padding: 18px; border-radius: 24px; }
+        .close-btn, .reference-close, .wave-close, .history-close, .detail-close, .save-close { font-size: 32px; cursor: pointer; float: right; line-height: 1; }
+        .view-toggle { display: flex; gap: 10px; margin: 12px 0; }
+        .view-btn { padding: 10px 16px; border: 2px solid #3498db; background: white; border-radius: 40px; font-size: 14px; }
+        .view-btn.active { background: #3498db; color: white; }
+        .numbers-grid, .animals-grid { background: #f8fafc; border-radius: 16px; padding: 14px; max-height: 400px; overflow-y: auto; }
+        .grid-container { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+        .number-card, .animal-card { background: white; border-radius: 12px; padding: 8px 4px; text-align: center; box-shadow: 0 2px 6px rgba(0,0,0,0.05); font-size: 13px; }
+        .history-list-header { display: none; }
+        .history-item { display: flex; flex-wrap: wrap; gap: 6px; padding: 12px 8px; border-bottom: 1px solid #eee; font-size: 13px; align-items: center; }
+        .history-item > div { flex: 1 1 auto; }
+        .history-item > div:last-child { flex: 0 0 auto; }
+        .detail-numbers-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 12px; }
+        .notification { position: fixed; top: 16px; right: 16px; left: 16px; padding: 14px 18px; border-radius: 14px; color: white; z-index: 11000; font-size: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+        .notification.success { background: #27ae60; }
+        .notification.error { background: #e74c3c; }
+        .notification.info { background: #3498db; }
+        .filter-bar { display: flex; flex-wrap: wrap; gap: 10px; margin: 12px 0; align-items: center; }
+        .filter-bar select, .filter-bar button { padding: 10px 14px; border-radius: 40px; border: 1px solid #ccc; font-size: 14px; background: white; }
+        .total-accum-bar { font-size: 17px; font-weight: 700; text-align: center; margin-top: 12px; padding: 12px; background: #d4e6f1; border-radius: 40px; }
+        .reference-grid, .wave-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .ref-item { background: #f8f9fa; border-radius: 14px; padding: 12px; border-left: 6px solid #e67e22; }
+        .wave-section { background: #f8f9fa; border-radius: 14px; padding: 12px; margin-bottom: 12px; }
+        .wave-numbers-grid { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+        .wave-number-item { padding: 4px 10px; border-radius: 20px; font-weight: 700; font-size: 13px; }
+        .wave-number-item.red { background: #fadbd8; color: #c0392b; }
+        .wave-number-item.blue { background: #d4e6f1; color: #2980b9; }
+        .wave-number-item.green { background: #d5f5e3; color: #27ae60; }
+        .save-info-item { display: flex; justify-content: space-between; padding: 8px 0; }
+        .save-input-area input { width: 100%; padding: 14px; border-radius: 14px; border: 1px solid #ccc; font-size: 15px; }
+        .save-actions { display: flex; gap: 12px; justify-content: flex-end; margin-top: 16px; }
+        .btn-save, .btn-confirm-yes { background: #27ae60; color: white; border: none; padding: 12px 24px; border-radius: 40px; font-weight: 700; }
+        .btn-cancel-save, .btn-confirm-no { background: #ecf0f1; border: none; padding: 12px 24px; border-radius: 40px; font-weight: 700; }
+        .parse-error-content { max-height: 90vh; }
+        .parse-error-header { display: flex; justify-content: space-between; align-items: center; padding: 18px 20px; background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); color: white; }
+        .parse-error-close { font-size: 32px; cursor: pointer; }
+        .parse-error-body { padding: 14px; overflow-y: auto; flex: 1; }
+        .parse-error-line { padding: 10px 12px; margin-bottom: 10px; background: #fef5f5; border-radius: 12px; border-left: 4px solid #e74c3c; font-size: 13px; }
+        .parse-error-footer { padding: 14px; border-top: 1px solid #eee; display: flex; justify-content: flex-end; }
+        .parse-error-footer button { background: #ecf0f1; border: none; border-radius: 40px; padding: 12px 28px; font-weight: 600; font-size: 15px; }
+        
+        /* 针对小屏的额外调整 */
+        @media (max-width: 400px) {
+            .table-area { grid-template-columns: 1fr; }
+            .top-bar button { font-size: 12px; padding: 8px 10px; }
+            .risk-summary-item { flex: 1 1 100%; }
+        }
+        /* 保证输入框大一点 */
+        input, button, select, textarea { font-size: 16px; }
+    </style>
+</head>
+<body>
+    <!-- 登录弹窗 -->
+    <div id="loginOverlay" class="login-overlay">
+        <div class="login-container"><div class="login-box"><div class="login-title"><h2>🔐 统计系统</h2><p>请输入账号密码登录</p></div>
+        <div class="login-input-group"><label>账号</label><input type="text" id="loginUsername" placeholder="请输入账号"></div>
+        <div class="login-input-group"><label>密码</label><input type="password" id="loginPassword" placeholder="请输入密码" onkeypress="if(event.keyCode===13) login()"></div>
+        <button class="login-btn" onclick="login()">登 录</button><div id="loginError" class="login-error">账号或密码错误</div></div></div>
+    </div>
+
+    <!-- 主界面 -->
+    <div class="main-layout" id="mainLayout">
+        <div class="main-content">
+            <div class="container">
+                <div class="top-bar">
+                    <button id="cancelOrderBtn" class="cancel-order-btn">🗑️ 撤单</button>
+                    <button id="referenceBtn">🐾 生肖参照</button>
+                    <button id="waveBtn">🎨 波色参照</button>
+                    <button id="formatManagerBtn" style="background:#e67e22;color:white;">⚙️ 识别格式</button>
+                    <button id="summaryBtn">📊 汇总</button>
+                    <button id="clearAllBtn" style="color:red;">🗑️ 清空累计数据</button>
+                    <button id="saveBtn" class="save-btn">💾 保存投注</button>
+                    <button id="historyBtn" style="background:#667eea;color:white;">📋 投注记录</button>
+                    <button id="riskBtn" class="risk-btn">⚠️ 风险评估</button>
+                </div>
+                <div class="customer-info">
+                    客户: <input type="text" id="customerName" value="2222" style="width:80px;">
+                    <label><input type="checkbox"> 包特</label>
+                    <label><input type="checkbox"> 平连码</label>
+                    <span style="margin-left:auto;">本单汇总: ¥<span id="orderTotal">0</span></span>
+                    <button id="clearOrderBtn" style="color:#ff0000;">清空本单</button>
+                </div>
+                <div class="table-area" id="numbersTableArea"></div>
+                <div class="summary">
+                    <div>散码总数: <span id="scatterTotal">0</span></div>
+                    <div class="amount-item current-amount">本次上报金额：¥<span id="reportTotal">0</span></div>
+                    <div class="amount-item accumulate-amount">累计上报金额：¥<span id="accumulateTotal">0</span></div>
+                    <div class="data-code">2222新澳数据</div>
+                </div>
+                
+                <div class="report-record-panel" id="reportRecordPanel">
+                    <div class="record-header">
+                        <span>📋 识别上报记录</span>
+                        <button id="clearAllRecordsBtn" style="background:none; border:none; color:#e74c3c; cursor:pointer; font-size:12px;">清空所有记录</button>
+                    </div>
+                    <div id="recordList" class="record-list">
+                        <div class="record-empty">暂无识别上报记录</div>
+                    </div>
+                </div>
+                
+                <div style="margin-top:15px; padding-top:10px; border-top:1px solid #ccc;">
+                </div>
+            </div>
+        </div>
+        <div class="recognize-panel">
+            <div class="recognize-panel-header"><h3>🔍 识别金额</h3><p>支持云端同步配置</p></div>
+            
+            <div class="cloud-actions">
+                <button id="configTokenBtn" class="config-btn">🔑 配置Token</button>
+                <button id="uploadToGistBtn" class="upload-btn">☁️ 上传到云端</button>
+                <button id="downloadFromGistBtn" class="download-btn">⬇️ 从云端下载</button>
+                <button id="resetLocalConfigBtn" class="reset-btn">🔄 重置本地</button>
+            </div>
+            <div id="cloudStatus" class="cloud-status">☁️ 云端状态：未配置Token，请先点击"配置Token"</div>
+            
+            <div style="display:flex; gap:8px; margin:10px 0;">
+                <button class="help-btn" id="helpBtn" style="margin:0; flex:1;">📖 格式说明</button>
+                <button id="reportBtn" style="background:#e74c3c; color:white; border:none; border-radius:30px; padding:10px 12px; cursor:pointer; flex:1; font-weight:600; font-size:14px;">📤 一键上报</button>
+            </div>
+            <div class="format-hint" id="formatHint">
+                <p><strong>📝 支持的格式：</strong></p>
+                <p>• 生肖格式：<code>虎马鼠羊兔牛各50</code> → 每个生肖的所有号码各50元</p>
+                <p>• 生肖平均分配：<code>虎马肖各40</code> 或 <code>虎马个肖40</code> → 虎的4个号码平均分配40元（每个10元），马的5个号码平均分配40元（每个8元）</p>
+                <p>• 波色格式：<code>红波个20</code>、<code>蓝波各30</code>、<code>绿波个30</code></p>
+                <p>• 单双格式：<code>单号个50</code>、<code>双号各30</code></p>
+                <p>• 号码列表：<code>05 13 34 23 45 36各50</code> 或 <code>22/32/4/43/25个25</code>（号码必须用分隔符隔开，不能连写）</p>
+                <p>• 多生肖组合：<code>狗鸡兔猴个50</code> → 4个生肖各50元</p>
+                <p><strong>📌 分配模式：</strong> 每个金额关键词可单独配置"自动 / 平均分配 / 每码全额"。<br>
+                • <strong>自动</strong>：看金额前有没有"肖"字，有则平均，无则每码（兼容旧格式）<br>
+                • <strong>平均分配</strong>：金额在该组号码间均分，无视"肖"字<br>
+                • <strong>每码全额</strong>：该组每个号码都投该金额，无视"肖"字</p>
+                <p><strong>📌 分割符配置：</strong> 使用 # 号隔断多个分隔符，如 <code>#,#.#/#-#</code> 表示分隔符为 , . / -</p>
+                <p><strong>💡 备注说明：</strong> 金额后面的内容会被自动忽略</p>
+            </div>
+            <div class="recognize-input-area"><textarea id="recognizeText" placeholder="例如: 03-04-05个50&#10;单号各100&#10;狗鸡兔猴个50&#10;虎马肖各40&#10;虎马个肖40&#10;22/32/4/43/25个25"></textarea></div>
+            <div class="recognize-actions"><button class="btn-parse" id="parseBtn">开始识别</button><button class="btn-paste" id="pasteBtn">📋 粘贴</button><button class="btn-clear-panel" id="clearPanelBtn">清空文本</button></div>
+            <div class="parse-result" id="parseResult">解析成功！</div>
+        </div>
+    </div>
+
+    <!-- 撤单弹窗 -->
+    <div id="cancelModal" class="cancel-modal">
+        <div class="cancel-content">
+            <div class="cancel-header">
+                <h3>🗑️ 撤单管理</h3>
+                <span class="cancel-close" id="closeCancelBtn">&times;</span>
+            </div>
+            <div class="cancel-body">
+                <div style="display: flex; justify-content: flex-end; margin-bottom: 15px;">
+                    <button id="clearCancelRecordsBtn" class="cancel-clear-all">🗑️ 清空所有记录</button>
+                </div>
+                <div id="cancelList" class="cancel-list">
+                    <div class="cancel-empty">暂无记录</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Token配置弹窗 -->
+    <div id="tokenModal" class="token-modal">
+        <div class="token-content">
+            <div class="token-header">
+                <h3>🔑 GitHub Token 配置</h3>
+            </div>
+            <div class="token-input-group">
+                <label>GitHub Token</label>
+                <input type="password" id="githubTokenInput" placeholder="请输入你的GitHub Personal Access Token">
+                <div class="token-hint">💡 需要勾选 gist 权限</div>
+            </div>
+            <div class="token-input-group">
+                <label>Gist ID（可选，留空将自动创建）</label>
+                <input type="text" id="gistIdInput" placeholder="留空自动创建，或输入已有Gist ID">
+            </div>
+            <div id="tokenStatus" class="token-status"></div>
+            <div class="token-actions">
+                <button class="btn-cancel-token" id="cancelTokenBtn">取消</button>
+                <button class="btn-save-token" id="saveTokenBtn">保存配置</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 风险评估弹窗 -->
+    <div id="riskModal" class="risk-modal">
+        <div class="risk-content">
+            <div class="risk-header">
+                <h3>⚠️ 风险评估报告</h3>
+                <span class="risk-close" id="closeRiskBtn">&times;</span>
+            </div>
+            <div class="risk-body">
+                <div class="risk-summary">
+                    <div class="risk-summary-item">
+                        <div class="risk-summary-label">累计上报总金额</div>
+                        <div class="risk-summary-value" id="riskTotalAccum">0.00</div>
+                    </div>
+                    <div class="risk-summary-item">
+                        <div class="risk-summary-label">最终上报金额</div>
+                        <div class="risk-summary-value" id="finalReportAmount">0.00</div>
+                    </div>
+                    <div class="risk-summary-item fruit-amount">
+                        <div class="risk-summary-label">🍎 水果额</div>
+                        <div class="risk-summary-value" id="fruitAmount">0.00</div>
+                    </div>
+                    <div class="risk-summary-item custom-risk-item">
+                        <div class="risk-summary-label">📌 定总尾额</div>
+                        <div class="risk-summary-value" id="fixedTotalTail">0.00</div>
+                    </div>
+                    <div class="risk-summary-item custom-risk-item">
+                        <div class="risk-summary-label">📌 定总上报额</div>
+                        <div class="risk-summary-value" id="fixedTotalReport">0.00</div>
+                    </div>
+                    <div class="risk-summary-item win-count-item">
+                        <div class="risk-summary-label">🏆 赢个数</div>
+                        <div class="risk-summary-value" id="winCount">0</div>
+                    </div>
+                    <div class="risk-summary-item loss-count-item">
+                        <div class="risk-summary-label">📉 亏损个数</div>
+                        <div class="risk-summary-value" id="lossCount">0</div>
+                    </div>
+                </div>
+                
+                <div class="risk-buttons">
+                    <button id="refreshRiskBtn" style="background:#3498db;">🔄 刷新计算</button>
+                    <button id="copyAllContentBtn" class="copy-btn">📋 复制全部内容</button>
+                    <button id="sortByFixedRiskBtn" class="sort-btn">📊 按定风险额度排序</button>
+                </div>
+                
+                <div class="risk-table-container">
+                    <table class="risk-table">
+                        <thead>
+                            <tr>
+                                <th>号码</th><th>生肖</th><th>上报额(¥)</th><th>风险额度(¥)</th>
+                                <th>定尾单额(¥)</th><th>定最终额(¥)</th><th>定风险额度(¥)</th><th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="riskTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 识别格式管理器弹窗 -->
+    <div id="formatManagerModal" class="format-manager-modal">
+        <div class="format-manager-content">
+            <div class="format-manager-header"><h3>✏️ 自定义识别规则</h3><span class="format-manager-close" id="closeFormatManagerBtn">&times;</span></div>
+            <div class="format-manager-body">
+                <div class="rules-section">
+                    <div class="amount-keyword-card">
+                        <div class="amount-keyword-title">💰 金额关键词配置</div>
+                        <div class="amount-keyword-input-group">
+                            <input type="text" id="newAmountKeyword" placeholder="新金额关键词，如：各肖、个肖、米">
+                            <select id="newAmountKeywordMode">
+                                <option value="auto">自动（按肖字判定）</option>
+                                <option value="average">平均分配</option>
+                                <option value="per_number">每码全额</option>
+                            </select>
+                            <button id="addAmountKeywordBtn" class="btn-add-rule">添加关键词</button>
+                            <button id="restoreDefaultAmountKeywords" class="restore-default">恢复默认</button>
+                        </div>
+                        <div id="amountKeywordList" class="amount-keyword-list"></div>
+                        <div class="amount-keyword-hint">
+                            💡 说明：识别文本时，遇到这些词后面的数字作为金额。<br>
+                            • <strong>自动</strong>：金额前有"肖"字则平均分配，否则每码全额（兼容旧格式）<br>
+                            • <strong>平均分配</strong>：金额在该组号码间均分，无视"肖"字<br>
+                            • <strong>每码全额</strong>：该组每个号码都投该金额，无视"肖"字<br>
+                            内置关键词"各""个"不可删除（模式为自动）。
+                        </div>
+                    </div>
+                    <div class="rule-card">
+                        <h4>🔧 号码分割符号</h4>
+                        <div class="flex-group">
+                            <input type="text" id="customSeparators" placeholder="例如: #-#,#.#/#" value="#-#,#.#/#">
+                            <button id="saveSeparatorsBtn" class="btn-add-rule">保存</button>
+                        </div>
+                        <small class="separator-hint">💡 使用 # 号隔断多个分隔符</small>
+                        <small style="display:block; margin-top:5px;">当前分隔符：<span id="currentSeparatorsDisplay">- , . /</span></small>
+                    </div>
+                    <div class="rule-card"><h4>📝 关键词规则</h4><div class="flex-group"><input type="text" id="newKeyword" placeholder="新关键词名称"><button id="addKeywordBtn" class="btn-add-rule">添加关键词</button><button id="restoreDefaultKeywords" class="restore-default">恢复默认</button></div><div id="keywordList" class="rule-list"></div></div>
+                </div>
+                <div class="number-selector-section">
+                    <h4>📌 号码选择器</h4>
+                    <div id="currentEditKeywordName"></div>
+                    <div id="numberSelector" class="number-selector"></div>
+                    <div id="selectedCount" class="selected-info">已选择 0 个号码</div>
+                    <button id="saveKeywordNumbersBtn" class="btn-save-numbers">💾 保存当前关键词的号码</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 识别错误报告弹窗 -->
+    <div id="parseErrorModal" class="parse-error-modal">
+        <div class="parse-error-content">
+            <div class="parse-error-header">
+                <h3>❌ 识别出错</h3>
+                <span class="parse-error-close" id="closeParseErrorBtn">&times;</span>
+            </div>
+            <div class="parse-error-body" id="parseErrorBody"></div>
+            <div class="parse-error-footer">
+                <button id="parseErrorOkBtn">我知道了</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 其他弹窗 -->
+    <div id="summaryModal" class="modal-overlay"><div class="modal-content"><span class="close-btn" id="closeModalBtn">&times;</span><h3>📊 累计金额总览</h3><div class="view-toggle"><button id="viewNumbersBtn" class="view-btn active">按号码查看</button><button id="viewAnimalsBtn" class="view-btn">按生肖查看</button></div><div class="filter-bar"><select id="sortSelect"><option value="number">按号码顺序</option><option value="desc">金额从高到低</option><option value="asc">金额从低到高</option></select><button id="applyFilterBtn">应用排序</button></div><div id="numbersView" class="numbers-grid"><div class="grid-container" id="numbersGrid"></div></div><div id="animalsView" class="animals-grid" style="display:none;"><div class="grid-container" id="animalsGrid"></div></div><div class="total-accum-bar">累计总金额：¥<span id="modalAccumTotal">0</span></div></div></div>
+    <div id="referenceModal" class="reference-modal"><div class="reference-content"><span class="reference-close" id="closeReferenceBtn">&times;</span><h3>🐾 生肖参照表</h3><div id="referenceGrid" class="reference-grid"></div></div></div>
+    <div id="waveModal" class="wave-modal"><div class="wave-content"><span class="wave-close" id="closeWaveBtn">&times;</span><h3>🎨 波色参照表</h3><div id="waveGrid"></div></div></div>
+    <div id="saveModal" class="save-modal"><div class="save-content"><span class="save-close" id="closeSaveBtn">&times;</span><h3>💾 保存投注记录</h3><div class="save-info"><div class="save-info-item"><span>总金额：</span><span id="saveAmount">¥0</span></div><div class="save-info-item"><span>号码数量：</span><span id="saveNumbersCount">0</span></div><div class="save-info-item"><span>保存时间：</span><span id="saveTime"></span></div></div><div class="save-input-area"><label>备注：</label><input type="text" id="saveRemark" placeholder="例如：张三的单子"></div><div class="save-actions"><button class="btn-cancel-save" id="cancelSaveBtn">取消</button><button class="btn-save" id="confirmSaveBtn">确认保存</button></div></div></div>
+    <div id="historyModal" class="history-modal"><div class="history-content"><span class="history-close" id="closeHistoryBtn">&times;</span><h3>📋 投注记录列表</h3><div class="history-stats" style="display:flex; flex-wrap:wrap; gap:16px; margin:12px 0; padding:12px; background:#f0f0f0; border-radius:16px;"><div><strong>总投注金额：</strong> ¥<span id="historyTotalAmount">0</span></div><div><strong>投注次数：</strong> <span id="historyCount">0</span></div><div><strong>平均金额：</strong> ¥<span id="historyAvgAmount">0</span></div></div><div class="history-list"><div class="history-list-header"><div>保存时间</div><div>总金额</div><div>号码数量</div><div>备注</div><div>复制</div><div>上报历史</div></div><div id="historyListBody"></div></div><div class="history-actions" style="display:flex; flex-wrap:wrap; gap:10px; margin-top:12px; justify-content:flex-end;"><button id="refreshHistoryBtn" style="background:#95a5a6; color:white; border:none; padding:10px 18px; border-radius:40px;">刷新</button><button id="exportHistoryBtn" style="background:#3498db; color:white; border:none; padding:10px 18px; border-radius:40px;">导出数据</button><button id="clearHistoryBtn" style="background:#e74c3c; color:white; border:none; padding:10px 18px; border-radius:40px;">清除所有</button></div></div></div>
+    <div id="detailModal" class="detail-modal"><div class="detail-content"><span class="detail-close" id="closeDetailBtn">&times;</span><h4 id="detailTitle">投注详情</h4><div id="detailInfo"></div><div id="detailNumbersGrid" class="detail-numbers-grid"></div></div></div>
+    <div id="confirmModal" class="confirm-modal"><div class="confirm-content"><h4>⚠️ 确认操作</h4><p id="confirmMessage"></p><div class="confirm-buttons" style="display:flex; gap:15px; justify-content:center; margin-top:20px;"><button class="btn-confirm-yes" id="confirmYesBtn">确认</button><button class="btn-confirm-no" id="confirmNoBtn">取消</button></div></div></div>
+
+    <script>
+        // ==================== 全局变量 ====================
+        let numberToAnimal = {};
+        let waveColors = {};
+        let animalNumbers = {};
+        let numberAccum = {};
+        let savedRecords = [];
+        let amountInputs = [];
+        let currentDeleteTarget = null;
+        let currentEditingKeyword = null;
+        
+        let recognizeReportRecords = [];
+        let quickReportRecords = [];
+        
+        let customSeparators = ['-', '，', ',', '、', '.', ';', ' ', '/'];
+        let customKeywordGroups = {};
+        let customAmountKeywords = [
+            { text: '各', mode: 'auto' },
+            { text: '个', mode: 'auto' }
+        ];
+        
+        let fixedTailAmounts = {};
+        let currentSortMode = 'default';
+        
+        const animalOrder = ['鼠', '牛', '虎', '兔', '龙', '蛇', '马', '羊', '猴', '鸡', '狗', '猪'];
+        
+        let githubToken = '';
+        let gistId = '';
+        
+        // ==================== 辅助函数 ====================
+        function $(id) { return document.getElementById(id); }
+        
+        function parseSeparatorsFromInput(inputStr) {
+            if (!inputStr || inputStr.trim() === '') {
+                return ['-', '，', ',', '、', '.', ';', ' ', '/'];
+            }
+            let separatorStr = inputStr.trim();
+            let separators = [];
+            let parts = separatorStr.split('#');
+            for (let part of parts) {
+                if (part === '') continue;
+                for (let char of part) {
+                    if (char && !separators.includes(char)) {
+                        separators.push(char);
+                    }
+                }
+            }
+            if (separators.length === 0) {
+                separators = ['-', '，', ',', '、', '.', ';', ' ', '/'];
+            }
+            return separators;
+        }
+        
+        function separatorsToDisplayString(separators) {
+            if (!separators || separators.length === 0) return '';
+            return separators.join('#');
+        }
+        
+        function showNotification(msg, type) {
+            let div = document.createElement('div');
+            div.className = `notification ${type}`;
+            div.innerText = msg;
+            document.body.appendChild(div);
+            setTimeout(() => div.remove(), 2500);
+        }
+        
+        function getCurrentDateTime() {
+            let d = new Date();
+            return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}`;
+        }
+        
+        function calculateOrderTotal() {
+            let total = 0;
+            if (amountInputs && amountInputs.length > 0) {
+                amountInputs.forEach(inp => total += parseFloat(inp.value) || 0);
+            }
+            if ($('orderTotal')) $('orderTotal').innerText = total.toFixed(2);
+            if ($('scatterTotal')) $('scatterTotal').innerText = total.toFixed(2);
+        }
+        
+        function chineseToNumber(chinese) {
+            if (!isNaN(parseFloat(chinese))) return parseFloat(chinese);
+            let cleaned = chinese.replace(/[元块米蚊圆]$/, '');
+            const cn = { '一':1,'二':2,'三':3,'四':4,'五':5,'六':6,'七':7,'八':8,'九':9,'十':10,
+                '十一':11,'十二':12,'十三':13,'十四':14,'十五':15,'十六':16,'十七':17,'十八':18,'十九':19,
+                '二十':20,'二十一':21,'二十二':22,'二十三':23,'二十四':24,'二十五':25,'二十六':26,'二十七':27,'二十八':28,'二十九':29,
+                '三十':30,'四十':40,'五十':50,'六十':60,'七十':70,'八十':80,'九十':90,'一百':100 };
+            return cn[cleaned] || NaN;
+        }
+        
+        function normalizeAmountKeywords(arr) {
+            if (!Array.isArray(arr)) return [{ text: '各', mode: 'auto' }, { text: '个', mode: 'auto' }];
+            return arr.map(k => {
+                if (typeof k === 'string') return { text: k, mode: 'auto' };
+                if (k && typeof k === 'object' && typeof k.text === 'string') {
+                    let mode = (k.mode === 'average' || k.mode === 'per_number') ? k.mode : 'auto';
+                    return { text: k.text, mode: mode };
+                }
+                return null;
+            }).filter(Boolean);
+        }
+        
+        function getSortedAmountKeywordTexts() {
+            return [...customAmountKeywords]
+                .map(k => k.text)
+                .sort((a, b) => b.length - a.length);
+        }
+        
+        function buildAmountKeywordRegex() {
+            let sorted = getSortedAmountKeywordTexts();
+            let escaped = sorted.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+            return new RegExp(`(${escaped.join('|')})\\s*(?:肖)?\\s*(\\d+|[一二三四五六七八九十百零]+[元块米蚊圆]?)`);
+        }
+        
+        function matchAmountKeyword(text) {
+            const amountRegex = buildAmountKeywordRegex();
+            let match = text.match(amountRegex);
+            if (match) {
+                let amountStr = match[2];
+                let amount = !isNaN(parseFloat(amountStr)) ? parseFloat(amountStr) : chineseToNumber(amountStr);
+                if (!isNaN(amount) && amount > 0) {
+                    let kwText = match[1];
+                    let kwObj = customAmountKeywords.find(k => k.text === kwText);
+                    let mode = kwObj ? kwObj.mode : 'auto';
+                    return {
+                        amount,
+                        keyword: kwText,
+                        mode: mode,
+                        keywordIndex: match.index,
+                        amountEnd: match.index + match[0].length
+                    };
+                }
+            }
+            return null;
+        }
+        
+        // ==================== 核心解析函数 ====================
+        function parseRuleAndCalculate(ruleText) {
+            let results = {}, totalAmount = 0;
+            let amountMatchInfo = matchAmountKeyword(ruleText);
+            if (!amountMatchInfo) return { results, totalAmount: 0 };
+
+            let amount = amountMatchInfo.amount;
+            let amountIndex = amountMatchInfo.keywordIndex;
+            let leftRaw = ruleText.substring(0, amountIndex).trim();
+            if (!leftRaw) return { results, totalAmount: 0 };
+
+            let hasXiao = ruleText.substring(0, amountMatchInfo.amountEnd).includes('肖');
+            let effectiveMode;
+            if (amountMatchInfo.mode === 'average') effectiveMode = 'average';
+            else if (amountMatchInfo.mode === 'per_number') effectiveMode = 'per_number';
+            else effectiveMode = hasXiao ? 'average' : 'per_number';
+
+            let targets = [];
+
+            let animalMatches = leftRaw.match(/[鼠牛虎兔龙蛇马羊猴鸡狗猪]/g) || [];
+            let uniqueAnimals = [...new Set(animalMatches)];
+            for (let animal of uniqueAnimals) {
+                let numbers = animalNumbers[animal];
+                if (numbers && numbers.length > 0) {
+                    targets.push({
+                        type: 'animal',
+                        key: animal,
+                        numbers: numbers,
+                        mode: effectiveMode
+                    });
+                }
+            }
+
+            let remainingForKeywords = leftRaw.replace(/[鼠牛虎兔龙蛇马羊猴鸡狗猪]/g, '');
+            remainingForKeywords = remainingForKeywords.replace(/肖/g, '');
+            let sortedKeywords = Object.keys(customKeywordGroups).sort((a, b) => b.length - a.length);
+            for (let keyword of sortedKeywords) {
+                if (remainingForKeywords.includes(keyword)) {
+                    let numbers = customKeywordGroups[keyword];
+                    if (numbers && numbers.length > 0) {
+                        targets.push({
+                            type: 'keyword',
+                            key: keyword,
+                            numbers: numbers,
+                            mode: effectiveMode
+                        });
+                        remainingForKeywords = remainingForKeywords.split(keyword).join('');
+                    }
+                }
+            }
+
+            let remainingForNumbers = leftRaw.replace(/[鼠牛虎兔龙蛇马羊猴鸡狗猪]/g, '');
+            let allKeywordsToStrip = [
+                ...Object.keys(customKeywordGroups),
+                ...customAmountKeywords.map(k => k.text)
+            ].sort((a, b) => b.length - a.length);
+            for (let keyword of allKeywordsToStrip) {
+                remainingForNumbers = remainingForNumbers.split(keyword).join('');
+            }
+            remainingForNumbers = remainingForNumbers.replace(/肖/g, '');
+            remainingForNumbers = remainingForNumbers.trim();
+
+            if (remainingForNumbers) {
+                let escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                let sepPattern = customSeparators.map(s => escapeRegex(s)).join('');
+                let sepRegex = new RegExp(`[${sepPattern}\\s]+`);
+                
+                let hasSeparator = sepRegex.test(remainingForNumbers);
+                let numberStrs = [];
+                
+                if (hasSeparator) {
+                    let parts = remainingForNumbers.split(sepRegex);
+                    for (let part of parts) {
+                        part = part.trim();
+                        if (!part) continue;
+                        if (!/^\d{1,2}$/.test(part)) {
+                            return { results: {}, totalAmount: 0, error: `"${part}"不是有效号码（应为1~2位数字）` };
+                        }
+                        numberStrs.push(part);
+                    }
+                } else {
+                    if (!/^\d+$/.test(remainingForNumbers)) {
+                        return { results: {}, totalAmount: 0, error: `"${remainingForNumbers}"不是有效号码格式` };
+                    }
+                    if (remainingForNumbers.length > 2) {
+                        return { results: {}, totalAmount: 0, error: `号码"${remainingForNumbers}"未用分隔符隔开，请用空格/逗号/斜杠等分隔` };
+                    }
+                    numberStrs.push(remainingForNumbers);
+                }
+                
+                for (let ns of numberStrs) {
+                    let n = parseInt(ns);
+                    if (isNaN(n) || n < 1 || n > 49) {
+                        return { results: {}, totalAmount: 0, error: `号码"${ns}"超出范围（应为01~49）` };
+                    }
+                    let fmt = n < 10 ? '0' + n : '' + n;
+                    targets.push({
+                        type: 'number',
+                        key: fmt,
+                        numbers: [fmt],
+                        mode: 'per_number'
+                    });
+                }
+            }
+
+            for (let t of targets) {
+                if (t.mode === 'average') {
+                    let perAmount = amount / t.numbers.length;
+                    for (let num of t.numbers) {
+                        results[num] = (results[num] || 0) + perAmount;
+                        totalAmount += perAmount;
+                    }
+                } else {
+                    for (let num of t.numbers) {
+                        results[num] = (results[num] || 0) + amount;
+                        totalAmount += amount;
+                    }
+                }
+            }
+
+            return { results, totalAmount };
+        }
+        
+        function parseAdvancedWithDetails(text) {
+            let allResults = {}, lineDetails = [], grandTotal = 0;
+            let lines = text.split(/\r?\n/);
+            for (let line of lines) {
+                line = line.trim();
+                if (!line) continue;
+                let lineTotal = 0, lineResults = {};
+                let ruleParts = line.split(/[;；]/);
+                for (let part of ruleParts) {
+                    part = part.trim();
+                    let hasAmountKeyword = false;
+                    for (let kw of customAmountKeywords) {
+                        if (part.includes(kw.text)) {
+                            hasAmountKeyword = true;
+                            break;
+                        }
+                    }
+                    if (!hasAmountKeyword) continue;
+                    let parsed = parseRuleAndCalculate(part);
+                    if (parsed.error) continue;
+                    let { results, totalAmount } = parsed;
+                    if (totalAmount > 0) {
+                        lineTotal += totalAmount;
+                        for (let [num, amt] of Object.entries(results)) {
+                            lineResults[num] = (lineResults[num] || 0) + amt;
+                            allResults[num] = (allResults[num] || 0) + amt;
+                        }
+                    }
+                }
+                if (lineTotal > 0) {
+                    lineDetails.push({ text: line, total: lineTotal, results: lineResults });
+                    grandTotal += lineTotal;
+                }
+            }
+            return { allResults, lineDetails, grandTotal };
+        }
+        
+        function parseAdvanced(text) {
+            let results = {};
+            let errors = [];
+            let lines = text.split(/\r?\n/);
+            for (let i = 0; i < lines.length; i++) {
+                let line = lines[i];
+                let ruleParts = line.split(/[;；]/);
+                for (let part of ruleParts) {
+                    let hasAmountKeyword = false;
+                    for (let kw of customAmountKeywords) {
+                        if (part.includes(kw.text)) {
+                            hasAmountKeyword = true;
+                            break;
+                        }
+                    }
+                    if (!hasAmountKeyword) continue;
+                    let parsed = parseRuleAndCalculate(part.trim());
+                    if (parsed.error) {
+                        errors.push({ line: i + 1, text: part.trim(), reason: parsed.error });
+                        continue;
+                    }
+                    for (let [num, amt] of Object.entries(parsed.results)) {
+                        results[num] = (results[num] || 0) + amt;
+                    }
+                }
+            }
+            return { results, errors };
+        }
+        
+        function fillAmounts(results) {
+            let filled = 0, total = 0;
+            amountInputs.forEach(inp => {
+                let num = inp.dataset.number;
+                if (results[num]) {
+                    let cur = parseFloat(inp.value) || 0;
+                    inp.value = (cur + results[num]).toFixed(2);
+                    filled++;
+                    total += results[num];
+                }
+            });
+            calculateOrderTotal();
+            return { filled, total };
+        }
+        
+        // ==================== 风险评估核心函数 ====================
+        function getFixedRiskData() {
+            let accumTotal = parseFloat($('accumulateTotal')?.innerText) || 0;
+            if (accumTotal === 0) return null;
+            
+            let fixedTotalTail = 0;
+            for (let i = 1; i <= 49; i++) {
+                let numStr = i < 10 ? '0' + i : i.toString();
+                let fixedTail = fixedTailAmounts[numStr] || 0;
+                fixedTotalTail += fixedTail;
+            }
+            
+            let fixedTotalReport = Math.max(0, accumTotal - fixedTotalTail);
+            let fixedFruitAmount = fixedTotalReport * 0.02;
+            
+            let fixedRiskData = [];
+            
+            for (let i = 1; i <= 49; i++) {
+                let numStr = i < 10 ? '0' + i : i.toString();
+                let amount = numberAccum[numStr] || 0;
+                let animal = numberToAnimal[numStr] || '';
+                let fixedTail = fixedTailAmounts[numStr] || 0;
+                let fixedFinalAmount = Math.max(0, amount - fixedTail);
+                
+                fixedRiskData.push({
+                    number: numStr,
+                    animal: animal,
+                    amount: amount,
+                    risk: 0,
+                    fixedTail: fixedTail,
+                    fixedFinalAmount: fixedFinalAmount,
+                    fixedRisk: 0
+                });
+            }
+            
+            for (let item of fixedRiskData) {
+                item.fixedRisk = fixedTotalReport - fixedFruitAmount - (item.fixedFinalAmount * 48);
+            }
+            
+            return { accumTotal, fixedTotalTail, fixedTotalReport, fixedFruitAmount, fixedRiskData };
+        }
+        
+        function getMergedRiskData() {
+            let fixedData = getFixedRiskData();
+            if (!fixedData) return null;
+            
+            let mergedData = [];
+            for (let item of fixedData.fixedRiskData) {
+                mergedData.push({
+                    number: item.number,
+                    animal: item.animal,
+                    amount: item.amount,
+                    risk: 0,
+                    fixedTail: item.fixedTail,
+                    fixedFinalAmount: item.fixedFinalAmount,
+                    fixedRisk: item.fixedRisk
+                });
+            }
+            
+            if (currentSortMode === 'fixedRisk') {
+                mergedData.sort((a, b) => a.fixedRisk - b.fixedRisk);
+            } else {
+                mergedData.sort((a, b) => b.amount - a.amount);
+            }
+            
+            let finalReportAmount = Math.max(0, fixedData.accumTotal - fixedData.fixedTotalTail);
+            let fruitAmount = finalReportAmount * 0.02;
+            
+            return {
+                accumTotal: fixedData.accumTotal,
+                finalReportAmount: finalReportAmount,
+                fruitAmount: fruitAmount,
+                fixedTotalTail: fixedData.fixedTotalTail,
+                fixedTotalReport: fixedData.fixedTotalReport,
+                fixedFruitAmount: fixedData.fixedFruitAmount,
+                mergedData: mergedData
+            };
+        }
+        
+        function renderRiskTable() {
+            let data = getMergedRiskData();
+            if (!data) {
+                if($('riskTableBody')) $('riskTableBody').innerHTML = '<tr><td colspan="8" style="text-align:center;">累计上报金额为0，暂无数据</td></tr>';
+                if($('riskTotalAccum')) $('riskTotalAccum').innerText = '0.00';
+                if($('finalReportAmount')) $('finalReportAmount').innerText = '0.00';
+                if($('fruitAmount')) $('fruitAmount').innerText = '0.00';
+                if($('fixedTotalTail')) $('fixedTotalTail').innerText = '0.00';
+                if($('fixedTotalReport')) $('fixedTotalReport').innerText = '0.00';
+                if ($('winCount')) $('winCount').innerText = '0';
+                if ($('lossCount')) $('lossCount').innerText = '0';
+                return;
+            }
+            
+            if($('riskTotalAccum')) $('riskTotalAccum').innerText = data.accumTotal.toFixed(2);
+            if($('finalReportAmount')) $('finalReportAmount').innerText = data.finalReportAmount.toFixed(2);
+            if($('fruitAmount')) $('fruitAmount').innerText = data.fruitAmount.toFixed(2);
+            if($('fixedTotalTail')) $('fixedTotalTail').innerText = data.fixedTotalTail.toFixed(2);
+            if($('fixedTotalReport')) $('fixedTotalReport').innerText = data.fixedTotalReport.toFixed(2);
+            
+            let winCount = 0;
+            let lossCount = 0;
+            
+            for (let item of data.mergedData) {
+                if (item.fixedRisk > 0) {
+                    winCount++;
+                } else if (item.fixedRisk < 0) {
+                    lossCount++;
+                }
+            }
+            
+            if ($('winCount')) $('winCount').innerText = winCount;
+            if ($('lossCount')) $('lossCount').innerText = lossCount;
+            
+            let tbodyHtml = '';
+            for (let item of data.mergedData) {
+                let fixedRiskClass = item.fixedRisk >= 0 ? 'risk-positive' : 'risk-negative';
+                let fixedRiskSign = item.fixedRisk >= 0 ? '+' : '';
+                
+                tbodyHtml += `<tr data-number="${item.number}">
+                    <td>${item.number}</td>
+                    <td>${item.animal}</td>
+                    <td>${item.amount.toFixed(2)}</td>
+                    <td>0.00</td>
+                    <td><input type="number" class="tail-input fixed-tail-input" data-number="${item.number}" value="${(item.fixedTail || 0).toFixed(2)}" step="10" style="width:70px;"></td>
+                    <td>${item.fixedFinalAmount.toFixed(2)}</td>
+                    <td class="${fixedRiskClass}">${fixedRiskSign}${item.fixedRisk.toFixed(2)}</td>
+                    <td>
+                        <button class="copy-btn-small copy-item-btn" data-number="${item.number}" data-animal="${item.animal}" data-final="${item.fixedFinalAmount.toFixed(2)}" data-finalrisk="${item.fixedRisk.toFixed(2)}">📋详情</button>
+                    </td>
+                   </tr>`;
+            }
+            if($('riskTableBody')) $('riskTableBody').innerHTML = tbodyHtml || '<tr><td colspan="8" style="text-align:center;">暂无数据</td></tr>';
+            
+            document.querySelectorAll('.fixed-tail-input').forEach(input => {
+                input.onchange = (e) => {
+                    let num = input.dataset.number;
+                    let val = parseFloat(input.value) || 0;
+                    if (val < 0) val = 0;
+                    fixedTailAmounts[num] = val;
+                    saveFixedTailAmounts();
+                    renderRiskTable();
+                };
+            });
+            
+            document.querySelectorAll('.copy-item-btn').forEach(btn => {
+                btn.onclick = (e) => { 
+                    e.stopPropagation(); 
+                    copyToClipboard(`${btn.dataset.number}/${btn.dataset.animal}/${btn.dataset.final}(${btn.dataset.finalrisk})`); 
+                };
+            });
+        }
+        
+        function saveFixedTailAmounts() {
+            localStorage.setItem('fixedTailAmounts', JSON.stringify(fixedTailAmounts));
+        }
+        
+        function loadFixedTailAmounts() {
+            const stored = localStorage.getItem('fixedTailAmounts');
+            if (stored) {
+                fixedTailAmounts = JSON.parse(stored);
+            }
+        }
+        
+        function sortByFixedRisk() {
+            currentSortMode = 'fixedRisk';
+            renderRiskTable();
+            showNotification('已按定风险额度排序（从最高亏损到最高盈利）', 'info');
+        }
+        
+        function copyAllContent() {
+            let data = getMergedRiskData();
+            if (!data || data.mergedData.length === 0) { showNotification('暂无数据可复制', 'error'); return; }
+            let contentText = data.mergedData.map(item => `${item.number}/${item.animal}/${item.fixedFinalAmount.toFixed(2)}(${item.fixedRisk.toFixed(2)})`).join('\n');
+            contentText += `\n累计：${data.mergedData.reduce((s,i)=>s+i.fixedFinalAmount,0).toFixed(2)}`;
+            copyToClipboard(contentText);
+        }
+        
+        async function copyToClipboard(text) {
+            try { await navigator.clipboard.writeText(text); showNotification('✅ 已复制到剪贴板', 'success'); } 
+            catch(err) { showNotification('❌ 复制失败', 'error'); }
+        }
+        
+        // ==================== 金额关键词管理函数 ====================
+        function getModeLabel(mode) {
+            if (mode === 'average') return '平均分配';
+            if (mode === 'per_number') return '每码全额';
+            return '自动';
+        }
+        function getModeClass(mode) {
+            if (mode === 'average') return 'mode-average';
+            if (mode === 'per_number') return 'mode-per-number';
+            return 'mode-auto';
+        }
+        
+        function loadAmountKeywords() {
+            const stored = localStorage.getItem('customAmountKeywords');
+            if (stored) {
+                try {
+                    customAmountKeywords = normalizeAmountKeywords(JSON.parse(stored));
+                } catch (e) {
+                    customAmountKeywords = [{ text: '各', mode: 'auto' }, { text: '个', mode: 'auto' }];
+                }
+            } else {
+                customAmountKeywords = [{ text: '各', mode: 'auto' }, { text: '个', mode: 'auto' }];
+            }
+            ['各', '个'].forEach(t => {
+                if (!customAmountKeywords.find(k => k.text === t)) {
+                    customAmountKeywords.unshift({ text: t, mode: 'auto' });
+                }
+            });
+            renderAmountKeywordList();
+        }
+        
+        function saveAmountKeywords() {
+            localStorage.setItem('customAmountKeywords', JSON.stringify(customAmountKeywords));
+            renderAmountKeywordList();
+        }
+        
+        function renderAmountKeywordList() {
+            const container = $('amountKeywordList');
+            if (!container) return;
+            let html = '';
+            for (let kw of customAmountKeywords) {
+                let isBuiltin = (kw.text === '各' || kw.text === '个');
+                html += `<div class="amount-keyword-item">
+                    <div>
+                        <span class="amount-keyword-text">${kw.text}</span>
+                        <span class="amount-keyword-mode ${getModeClass(kw.mode)}">${getModeLabel(kw.mode)}</span>
+                    </div>
+                    <div class="amount-keyword-actions">
+                        ${!isBuiltin ? `<button class="del-amount-keyword" data-keyword="${kw.text}">🗑️</button>` : '<span style="color:#999; font-size:12px;">内置</span>'}
+                    </div>
+                </div>`;
+            }
+            container.innerHTML = html || '<div style="padding:20px; text-align:center;">暂无金额关键词</div>';
+            document.querySelectorAll('.del-amount-keyword').forEach(btn => {
+                btn.onclick = () => {
+                    let kw = btn.dataset.keyword;
+                    if (kw && customAmountKeywords.find(k => k.text === kw)) {
+                        customAmountKeywords = customAmountKeywords.filter(k => k.text !== kw);
+                        saveAmountKeywords();
+                        showNotification(`已删除金额关键词 "${kw}"`, 'info');
+                    }
+                };
+            });
+        }
+        
+        function addAmountKeyword() {
+            let input = $('newAmountKeyword');
+            let modeSelect = $('newAmountKeywordMode');
+            let kw = input?.value.trim();
+            let mode = modeSelect?.value || 'auto';
+            if (!kw) { alert('请输入金额关键词'); return; }
+            if (customAmountKeywords.find(k => k.text === kw)) { alert('金额关键词已存在'); return; }
+            customAmountKeywords.push({ text: kw, mode: mode });
+            saveAmountKeywords();
+            input.value = '';
+            showNotification(`已添加金额关键词 "${kw}"（${getModeLabel(mode)}）`, 'success');
+        }
+        
+        function restoreDefaultAmountKeywords() {
+            if (confirm('恢复默认金额关键词将覆盖当前配置，确定吗？')) {
+                customAmountKeywords = [{ text: '各', mode: 'auto' }, { text: '个', mode: 'auto' }];
+                saveAmountKeywords();
+                showNotification('已恢复默认金额关键词', 'success');
+            }
+        }
+        
+        // ==================== 弹窗显示函数 ====================
+        function showCancelModal() { renderCancelList(); if($('cancelModal')) $('cancelModal').style.display = 'flex'; }
+        function showReferenceModal() { renderReference(); if($('referenceModal')) $('referenceModal').style.display = 'flex'; }
+        function showWaveModal() { renderWave(); if($('waveModal')) $('waveModal').style.display = 'flex'; }
+        function showFormatManagerModal() { 
+            const sepInput = $('customSeparators');
+            if (sepInput) sepInput.value = separatorsToDisplayString(customSeparators);
+            renderKeywordList(); 
+            renderAmountKeywordList();
+            clearNumberSelector(); 
+            if($('formatManagerModal')) $('formatManagerModal').style.display = 'flex'; 
+        }
+        function showSummaryModal() { renderSummaryView(); if($('summaryModal')) $('summaryModal').style.display = 'flex'; }
+        function showSaveModal() { 
+            let { details, totalAmount, numbersCount } = getCurrentAccumDetails();
+            if (totalAmount <= 0) { alert('当前累计金额为0，无需保存'); return; }
+            if($('saveAmount')) $('saveAmount').innerText = `¥${totalAmount.toFixed(2)}`;
+            if($('saveNumbersCount')) $('saveNumbersCount').innerText = numbersCount;
+            if($('saveTime')) $('saveTime').innerText = getCurrentDateTime();
+            if($('saveRemark')) $('saveRemark').value = '';
+            if($('saveModal')) $('saveModal').style.display = 'flex'; 
+        }
+        function showHistoryModal() { renderHistoryList(); if($('historyModal')) $('historyModal').style.display = 'flex'; }
+        function showRiskModal() { 
+            currentSortMode = 'default';
+            renderRiskTable(); 
+            if($('riskModal')) $('riskModal').style.display = 'flex'; 
+        }
+        
+        // ==================== 撤单管理 ====================
+        function clearAllCancelRecords() {
+            if (confirm('确定要清空所有撤单记录吗？此操作只清除记录，不影响累计金额！')) {
+                quickReportRecords = [];
+                saveQuickReportRecords();
+                renderCancelList();
+                showNotification('所有撤单记录已清空', 'success');
+            }
+        }
+        
+        function formatQuickReportDetailsHtml(lineDetails) {
+            let html = '';
+            for (let detail of lineDetails) {
+                html += `<div class="cancel-order-line-item">${detail.text} （总计：${detail.total}）</div>`;
+            }
+            return html;
+        }
+        
+        function renderCancelList() {
+            const container = $('cancelList');
+            if (!container) return;
+            if (quickReportRecords.length === 0) {
+                container.innerHTML = '<div class="cancel-empty">暂无记录</div>';
+                return;
+            }
+            let html = '';
+            quickReportRecords.forEach((record, index) => {
+                let orderNumber = index + 1;
+                html += `<div class="cancel-order-card" data-id="${record.id}">
+                    <div class="cancel-order-header">
+                        <span class="cancel-order-title">${orderNumber}号水果：总：${record.amount.toFixed(2)}</span>
+                        <span class="cancel-order-time">${record.time}</span>
+                    </div>
+                    <div class="cancel-order-details">${formatQuickReportDetailsHtml(record.lineDetails)}</div>
+                    <div style="display: flex; justify-content: flex-end; margin-top: 10px;">
+                        <button class="cancel-btn" data-id="${record.id}" data-amount="${record.amount}">🗑️ 撤单</button>
+                    </div>
+                </div>`;
+            });
+            container.innerHTML = html;
+            document.querySelectorAll('.cancel-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    let id = btn.dataset.id;
+                    let amount = parseFloat(btn.dataset.amount);
+                    cancelOrder(id, amount);
+                });
+            });
+        }
+        
+        function cancelOrder(recordId, recordAmount) {
+            if (!confirm(`确定要撤除此单吗？将扣除 ¥${recordAmount.toFixed(2)} 从累计上报金额中。`)) return;
+            const record = quickReportRecords.find(r => r.id === recordId);
+            if (!record) { showNotification('记录不存在', 'error'); return; }
+            if (record.lineDetails && record.lineDetails.length > 0) {
+                for (let detail of record.lineDetails) {
+                    if (detail.results) {
+                        for (let [num, amt] of Object.entries(detail.results)) {
+                            if (numberAccum[num]) {
+                                numberAccum[num] -= amt;
+                                if (numberAccum[num] < 0) numberAccum[num] = 0;
+                            }
+                        }
+                    }
+                }
+            }
+            let newAccumTotal = Object.values(numberAccum).reduce((sum, v) => sum + v, 0);
+            if($('accumulateTotal')) $('accumulateTotal').innerText = newAccumTotal.toFixed(2);
+            quickReportRecords = quickReportRecords.filter(r => r.id !== recordId);
+            saveQuickReportRecords();
+            renderCancelList();
+            showNotification(`撤单成功！已扣除 ¥${recordAmount.toFixed(2)}`, 'success');
+            if (newAccumTotal === 0 && $('reportTotal')) $('reportTotal').innerText = '0.00';
+        }
+        
+        // ==================== 识别上报记录管理 ====================
+        function loadRecognizeReportRecords() {
+            const stored = localStorage.getItem('recognizeReportRecords');
+            recognizeReportRecords = stored ? JSON.parse(stored) : [];
+            renderRecognizeReportRecords();
+        }
+        
+        function saveRecognizeReportRecords() { localStorage.setItem('recognizeReportRecords', JSON.stringify(recognizeReportRecords)); }
+        
+        function addRecognizeReportRecord(originalText, totalAmount, lineDetails) {
+            let record = {
+                id: Date.now().toString(),
+                time: getCurrentDateTime(),
+                amount: totalAmount,
+                source: '识别上报',
+                originalText: originalText,
+                lineDetails: lineDetails,
+                detailsHtml: formatLineDetailsText(lineDetails, totalAmount)
+            };
+            recognizeReportRecords.unshift(record);
+            saveRecognizeReportRecords();
+            renderRecognizeReportRecords();
+        }
+        
+        function renderRecognizeReportRecords() {
+            const container = $('recordList');
+            if (!container) return;
+            if (recognizeReportRecords.length === 0) { container.innerHTML = '<div class="record-empty">暂无识别上报记录</div>'; return; }
+            let html = '';
+            recognizeReportRecords.forEach(record => {
+                html += `<div class="record-item" data-id="${record.id}">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div><span class="record-time">${record.time}</span><span class="record-amount">🔍 识别上报 ¥${record.amount.toFixed(2)}</span></div>
+                        <button class="clear-record-btn" data-id="${record.id}" title="删除此记录">✖</button>
+                    </div>
+                    ${record.detailsHtml}
+                </div>`;
+            });
+            container.innerHTML = html;
+            document.querySelectorAll('.clear-record-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    let id = btn.dataset.id;
+                    recognizeReportRecords = recognizeReportRecords.filter(r => r.id !== id);
+                    saveRecognizeReportRecords();
+                    renderRecognizeReportRecords();
+                    showNotification('已删除该记录', 'info');
+                });
+            });
+        }
+        
+        // ==================== 一键上报记录管理 ====================
+        function loadQuickReportRecords() {
+            const stored = localStorage.getItem('quickReportRecords');
+            quickReportRecords = stored ? JSON.parse(stored) : [];
+        }
+        
+        function saveQuickReportRecords() { localStorage.setItem('quickReportRecords', JSON.stringify(quickReportRecords)); }
+        
+        function addQuickReportRecord(totalAmount, currentDetails) {
+            let lineDetails = [];
+            let sortedNumbers = Object.keys(currentDetails).sort((a, b) => parseInt(a) - parseInt(b));
+            let currentGroup = [], currentGroupTotal = 0;
+            for (let num of sortedNumbers) {
+                let amt = currentDetails[num];
+                currentGroup.push(`${num}个${amt}`);
+                currentGroupTotal += amt;
+            }
+            if (currentGroup.length > 0) {
+                lineDetails.push({ text: currentGroup.join('、'), total: currentGroupTotal, results: currentDetails });
+            }
+            quickReportRecords.push({ id: Date.now().toString(), time: getCurrentDateTime(), amount: totalAmount, source: '一键上报', lineDetails: lineDetails });
+            saveQuickReportRecords();
+        }
+        
+        function formatLineDetailsText(lineDetails, grandTotal) {
+            let html = '';
+            for (let detail of lineDetails) {
+                html += `<div class="record-line"><span class="record-line-text">${detail.text}</span><span class="record-line-total">（总计：${detail.total}）</span></div>`;
+            }
+            html += `<div class="record-grand-total">总：${grandTotal}</div>`;
+            return html;
+        }
+        
+        function manualClearRecognizeReportRecords() {
+            if (confirm('确定要清空所有识别上报记录吗？')) {
+                recognizeReportRecords = [];
+                saveRecognizeReportRecords();
+                renderRecognizeReportRecords();
+                showNotification('所有识别上报记录已清空', 'success');
+            }
+        }
+        
+        // ==================== 初始化号码表格 ====================
+        function generateNumberGrid() {
+            const container = $('numbersTableArea');
+            if (!container) return;
+            let numbers = [];
+            for (let i = 1; i <= 49; i++) numbers.push(i < 10 ? '0' + i : i.toString());
+            let cols = [[], [], [], []];
+            numbers.forEach((num, idx) => { if (idx < 12) cols[0].push(num); else if (idx < 24) cols[1].push(num); else if (idx < 36) cols[2].push(num); else cols[3].push(num); });
+            
+            const animalMap = {
+                '鼠': ['07','19','31','43'], '牛': ['06','18','30','42'], '虎': ['05','17','29','41'],
+                '兔': ['04','16','28','40'], '龙': ['03','15','27','39'], '蛇': ['02','14','26','38'],
+                '马': ['01','13','25','37','49'], '羊': ['12','24','36','48'], '猴': ['11','23','35','47'],
+                '鸡': ['10','22','34','46'], '狗': ['09','21','33','45'], '猪': ['08','20','32','44']
+            };
+            for (let [ani, nums] of Object.entries(animalMap)) { animalNumbers[ani] = nums; nums.forEach(n => numberToAnimal[n] = ani); }
+            
+            const waveMap = {
+                '01':'red','02':'red','07':'red','08':'red','12':'red','13':'red','18':'red','19':'red','23':'red','24':'red',
+                '29':'red','30':'red','34':'red','35':'red','40':'red','45':'red','46':'red','03':'blue','04':'blue','09':'blue',
+                '10':'blue','14':'blue','15':'blue','20':'blue','25':'blue','26':'blue','31':'blue','36':'blue','37':'blue',
+                '41':'blue','42':'blue','47':'blue','48':'blue','05':'green','06':'green','11':'green','16':'green','17':'green',
+                '21':'green','22':'green','27':'green','28':'green','32':'green','33':'green','38':'green','39':'green','43':'green','44':'green','49':'green'
+            };
+            Object.assign(waveColors, waveMap);
+            
+            let html = '';
+            for (let c = 0; c < 4; c++) {
+                html += '<div class="col">';
+                cols[c].forEach(num => {
+                    let animal = numberToAnimal[num] || '';
+                    let colorClass = waveColors[num] || '';
+                    html += `<div class="row"><span class="${colorClass}">${num}${animal}</span><input type="text" class="amount-input" data-number="${num}" data-animal="${animal}" value=""></div>`;
+                });
+                html += '</div>';
+            }
+            container.innerHTML = html;
+            amountInputs = document.querySelectorAll('.amount-input');
+            amountInputs.forEach(inp => inp.addEventListener('input', calculateOrderTotal));
+            calculateOrderTotal();
+        }
+        
+        // ==================== 配置加载与保存 ====================
+        function loadCustomConfig() {
+            const sepStr = localStorage.getItem('customSeparatorsRaw');
+            if (sepStr) customSeparators = parseSeparatorsFromInput(sepStr);
+            else customSeparators = ['-', '，', ',', '、', '.', ';', ' ', '/'];
+            if($('customSeparators')) $('customSeparators').value = separatorsToDisplayString(customSeparators);
+            if($('currentSeparatorsDisplay')) $('currentSeparatorsDisplay').innerText = customSeparators.join(' ');
+            const storedGroups = localStorage.getItem('customKeywordGroups');
+            if (storedGroups) customKeywordGroups = JSON.parse(storedGroups);
+            else initDefaultKeywordGroups();
+            loadAmountKeywords();
+            renderKeywordList();
+        }
+        
+        function initDefaultKeywordGroups() {
+            let allOdd = [], allEven = [];
+            for (let i = 1; i <= 49; i++) {
+                let numStr = i < 10 ? '0'+i : i+'';
+                if (i % 2 === 1) allOdd.push(numStr);
+                else allEven.push(numStr);
+            }
+            customKeywordGroups = {
+                "单号": allOdd, "双号": allEven,
+                "红波": Object.keys(waveColors).filter(k => waveColors[k] === 'red'),
+                "蓝波": Object.keys(waveColors).filter(k => waveColors[k] === 'blue'),
+                "绿波": Object.keys(waveColors).filter(k => waveColors[k] === 'green'),
+            };
+            for (let [animal, nums] of Object.entries(animalNumbers)) customKeywordGroups[animal] = nums;
+        }
+        
+        function saveSeparators() {
+            const sepInput = $('customSeparators');
+            if (sepInput) {
+                const rawInput = sepInput.value;
+                localStorage.setItem('customSeparatorsRaw', rawInput);
+                customSeparators = parseSeparatorsFromInput(rawInput);
+                if($('currentSeparatorsDisplay')) $('currentSeparatorsDisplay').innerText = customSeparators.join(' ');
+                showNotification('分割符已保存', 'success');
+            }
+        }
+        
+        function saveKeywordGroups() { localStorage.setItem('customKeywordGroups', JSON.stringify(customKeywordGroups)); }
+        
+        function getCurrentAccumDetails() {
+            let details = {}, totalAmount = 0, numbersCount = 0;
+            for (let [num, amt] of Object.entries(numberAccum)) {
+                if (amt > 0) { details[num] = amt; totalAmount += amt; numbersCount++; }
+            }
+            return { details, totalAmount, numbersCount };
+        }
+        
+        function clearAccumulatedData() {
+            numberAccum = {};
+            fixedTailAmounts = {};
+            saveFixedTailAmounts();
+            quickReportRecords = [];
+            saveQuickReportRecords();
+            renderCancelList();
+            if($('reportTotal')) $('reportTotal').innerText = '0.00';
+            if($('accumulateTotal')) $('accumulateTotal').innerText = '0.00';
+        }
+        
+        function loadSavedRecords() { savedRecords = JSON.parse(localStorage.getItem('savedRecords') || '[]'); }
+        function saveRecordsToStorage() { localStorage.setItem('savedRecords', JSON.stringify(savedRecords)); }
+        
+        function showRecordReportHistory(record) {
+            if (!record.reportRecords || record.reportRecords.length === 0) {
+                alert(`投注记录 "${record.remark || '无备注'}" 无关联的上报历史`);
+                return;
+            }
+            let reportText = `📋 投注记录 "${record.remark || '无备注'}" 的上报历史：\n\n`;
+            record.reportRecords.forEach(r => {
+                reportText += `时间：${r.time}\n`;
+                if (r.lineDetails) r.lineDetails.forEach(detail => reportText += `  ${detail.text} （总计：${detail.total}）\n`);
+                reportText += `  总：${r.amount}\n来源：${r.source}\n\n`;
+            });
+            if($('detailTitle')) $('detailTitle').innerText = `上报历史 - ${record.remark || '无备注'}`;
+            if($('detailInfo')) $('detailInfo').innerHTML = `<div style="white-space: pre-wrap; max-height: 400px; overflow-y: auto; font-family: monospace; font-size: 12px;">${reportText.replace(/\n/g, '<br>')}</div>`;
+            if($('detailNumbersGrid')) $('detailNumbersGrid').innerHTML = '';
+            if($('detailModal')) $('detailModal').style.display = 'flex';
+        }
+        
+        function renderHistoryList() {
+            let sorted = [...savedRecords].sort((a,b) => new Date(b.time) - new Date(a.time));
+            let totalAmount = 0, html = '';
+            sorted.forEach(record => {
+                totalAmount += record.totalAmount;
+                let numCount = Object.keys(record.details).length;
+                html += `<div class="history-item" data-id="${record.id}">
+                    <div>${record.time}</div>
+                    <div style="color:#27ae60;">¥${record.totalAmount.toFixed(2)}</div>
+                    <div>${numCount}个</div>
+                    <div>${record.remark || '无备注'}</div>
+                    <div><button class="copy-record-btn" data-id="${record.id}" style="background:#3498db; color:white; border:none; border-radius:20px; padding:4px 12px;">复制</button></div>
+                    <div><button class="view-report-btn" data-id="${record.id}" style="background:#ff9800; color:white; border:none; border-radius:20px; padding:4px 12px;">📋 上报历史</button></div>
+                </div>`;
+            });
+            if($('historyListBody')) $('historyListBody').innerHTML = html || '<div style="text-align:center; padding:20px;">暂无投注记录</div>';
+            if($('historyTotalAmount')) $('historyTotalAmount').innerText = totalAmount.toFixed(2);
+            if($('historyCount')) $('historyCount').innerText = savedRecords.length;
+            if($('historyAvgAmount')) $('historyAvgAmount').innerText = savedRecords.length > 0 ? (totalAmount / savedRecords.length).toFixed(2) : '0.00';
+            
+            document.querySelectorAll('.copy-record-btn').forEach(btn => {
+                btn.onclick = (e) => { e.stopPropagation(); let r = savedRecords.find(r => r.id === btn.dataset.id); if(r) copyRecordToClipboard(r); };
+            });
+            document.querySelectorAll('.view-report-btn').forEach(btn => {
+                btn.onclick = (e) => { e.stopPropagation(); let r = savedRecords.find(r => r.id === btn.dataset.id); if(r) showRecordReportHistory(r); };
+            });
+            document.querySelectorAll('.history-item').forEach(item => {
+                item.onclick = () => showRecordDetail(item.dataset.id);
+            });
+        }
+        
+        function formatRecordForClipboard(record) {
+            let customer = $('customerName')?.value || '未填写';
+            let details = Object.entries(record.details).sort((a,b) => parseInt(a[0]) - parseInt(b[0]));
+            let detailText = details.map(([num, amt]) => `${num}${numberToAnimal[num]||''}：¥${amt.toFixed(2)}`).join('\n');
+            return `客户：${customer}\n保存时间：${record.time}\n总金额：¥${record.totalAmount.toFixed(2)}\n备注：${record.remark || '无备注'}\n\n投注明细：\n${detailText}`;
+        }
+        
+        async function copyRecordToClipboard(record) { 
+            try { await navigator.clipboard.writeText(formatRecordForClipboard(record)); showNotification('✅ 已复制', 'success'); } 
+            catch(e) { showNotification('复制失败', 'error'); } 
+        }
+        
+        function showRecordDetail(id) {
+            let record = savedRecords.find(r => r.id === id);
+            if (!record) return;
+            if($('detailTitle')) $('detailTitle').innerText = `投注详情 - ${record.remark || '无备注'}`;
+            if($('detailInfo')) $('detailInfo').innerHTML = `<div><strong>保存时间：</strong> ${record.time}</div><div><strong>总金额：</strong> ¥${record.totalAmount.toFixed(2)}</div><div><strong>号码数量：</strong> ${Object.keys(record.details).length}个</div>`;
+            let html = '';
+            Object.entries(record.details).sort((a,b) => parseInt(a[0]) - parseInt(b[0])).forEach(([num, amt]) => { 
+                let color = waveColors[num] || ''; 
+                html += `<div class="number-card ${color}"><div><strong>${num}</strong> ${numberToAnimal[num]||''}</div><div>¥${amt.toFixed(2)}</div></div>`; 
+            });
+            if($('detailNumbersGrid')) $('detailNumbersGrid').innerHTML = html;
+            if($('detailModal')) $('detailModal').style.display = 'flex';
+        }
+        
+        function deleteAllRecords() { savedRecords = []; saveRecordsToStorage(); renderHistoryList(); }
+        
+        function renderSummaryView() {
+            let sortBy = $('sortSelect')?.value || 'number';
+            let items = [];
+            for (let i = 1; i <= 49; i++) { 
+                let num = i < 10 ? '0'+i : i+''; 
+                items.push({ number: num, animal: numberToAnimal[num], amount: numberAccum[num] || 0 }); 
+            }
+            if (sortBy === 'desc') items.sort((a,b) => b.amount - a.amount);
+            else if (sortBy === 'asc') items.sort((a,b) => a.amount - b.amount);
+            else items.sort((a,b) => parseInt(a.number) - parseInt(b.number));
+            let amounts = items.filter(i => i.amount > 0).map(i => i.amount);
+            let maxVal = amounts.length ? Math.max(...amounts) : -1, minVal = amounts.length ? Math.min(...amounts) : -1;
+            let html = '';
+            items.forEach(item => {
+                let cls = (item.amount > 0 && item.amount === maxVal && maxVal !== minVal) ? 'highlight-max' : (item.amount > 0 && item.amount === minVal && maxVal !== minVal) ? 'highlight-min' : '';
+                html += `<div class="number-card ${cls}"><div><strong>${item.number}</strong> ${item.animal||''}</div><div>¥${item.amount.toFixed(2)}</div></div>`;
+            });
+            if($('numbersGrid')) $('numbersGrid').innerHTML = html;
+            let total = items.reduce((s,i) => s + i.amount, 0);
+            if($('modalAccumTotal')) $('modalAccumTotal').innerText = total.toFixed(2);
+            
+            let animalTotals = {};
+            for (let animal of Object.keys(animalNumbers)) animalTotals[animal] = 0;
+            for (let [num, amt] of Object.entries(numberAccum)) { let animal = numberToAnimal[num]; if (animal) animalTotals[animal] += amt; }
+            let animalHtml = '';
+            for (let animal of animalOrder) {
+                let amt = animalTotals[animal] || 0;
+                animalHtml += `<div class="animal-card"><div>🐾 ${animal}</div><div>¥${amt.toFixed(2)}</div><div style="font-size:11px;">${animalNumbers[animal]?.join(' ')}</div></div>`;
+            }
+            if($('animalsGrid')) $('animalsGrid').innerHTML = animalHtml;
+        }
+        
+        function renderReference() {
+            let html = '';
+            for (let animal of animalOrder) {
+                let nums = animalNumbers[animal] || [];
+                html += `<div class="ref-item"><div style="font-weight:bold;">🐾 ${animal}</div><div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;">`;
+                nums.forEach(num => { html += `<span class="${waveColors[num] || ''}" style="padding:4px 10px; background:#f0f0f0; border-radius:20px;">${num}</span>`; });
+                html += `</div></div>`;
+            }
+            if($('referenceGrid')) $('referenceGrid').innerHTML = html;
+        }
+        
+        function renderWave() {
+            let reds = [], blues = [], greens = [];
+            for (let [num, color] of Object.entries(waveColors)) { 
+                if (color === 'red') reds.push(num); 
+                else if (color === 'blue') blues.push(num); 
+                else greens.push(num); 
+            }
+            let html = `<div class="wave-section"><h4>🔴 红波 (${reds.length}个)</h4><div class="wave-numbers-grid">${reds.map(n=>`<span class="wave-number-item red">${n}</span>`).join('')}</div></div>`;
+            html += `<div class="wave-section"><h4>🔵 蓝波 (${blues.length}个)</h4><div class="wave-numbers-grid">${blues.map(n=>`<span class="wave-number-item blue">${n}</span>`).join('')}</div></div>`;
+            html += `<div class="wave-section"><h4>🟢 绿波 (${greens.length}个)</h4><div class="wave-numbers-grid">${greens.map(n=>`<span class="wave-number-item green">${n}</span>`).join('')}</div></div>`;
+            if($('waveGrid')) $('waveGrid').innerHTML = html;
+        }
+        
+        function renderKeywordList() {
+            const container = $('keywordList');
+            if (!container) return;
+            let html = '';
+            for (let [kw, nums] of Object.entries(customKeywordGroups)) {
+                html += `<div class="rule-item"><span class="rule-pattern">${kw}</span><div class="rule-actions"><button class="edit-rule" data-keyword="${kw}">✏️</button><button class="del-rule" data-keyword="${kw}">🗑️</button></div></div>`;
+            }
+            container.innerHTML = html || '<div style="padding:20px; text-align:center;">暂无规则，点击添加</div>';
+            document.querySelectorAll('.edit-rule').forEach(btn => btn.onclick = () => selectKeywordForEdit(btn.dataset.keyword));
+            document.querySelectorAll('.del-rule').forEach(btn => btn.onclick = () => { let kw = btn.dataset.keyword; if (kw && customKeywordGroups[kw]) delete customKeywordGroups[kw]; saveKeywordGroups(); renderKeywordList(); if (currentEditingKeyword === kw) clearNumberSelector(); showNotification(`已删除 ${kw}`, 'info'); });
+        }
+        
+        function selectKeywordForEdit(keyword) {
+            currentEditingKeyword = keyword;
+            if($('currentEditKeywordName')) $('currentEditKeywordName').innerHTML = `正在编辑：<span style="background:#e67e22; color:white; padding:2px 12px; border-radius:20px;">${keyword}</span>`;
+            let numbers = customKeywordGroups[keyword] || [];
+            let html = '';
+            for (let i = 1; i <= 49; i++) {
+                let numStr = i < 10 ? '0'+i : i+'';
+                let animal = numberToAnimal[numStr] || '';
+                let isChecked = numbers.includes(numStr);
+                html += `<label class="num-checkbox"><input type="checkbox" value="${numStr}" ${isChecked ? 'checked' : ''}><span class="${waveColors[numStr] || ''}">${numStr}${animal}</span></label>`;
+            }
+            if($('numberSelector')) $('numberSelector').innerHTML = html;
+            updateSelectedCount();
+            document.querySelectorAll('#numberSelector input').forEach(cb => cb.onchange = updateSelectedCount);
+        }
+        
+        function updateSelectedCount() {
+            let count = document.querySelectorAll('#numberSelector input:checked').length;
+            if($('selectedCount')) $('selectedCount').innerText = `已选择 ${count} 个号码`;
+        }
+        
+        function clearNumberSelector() {
+            if($('currentEditKeywordName')) $('currentEditKeywordName').innerHTML = '';
+            if($('numberSelector')) $('numberSelector').innerHTML = '';
+            if($('selectedCount')) $('selectedCount').innerText = '已选择 0 个号码';
+            currentEditingKeyword = null;
+        }
+        
+        function saveCurrentKeywordNumbers() {
+            if (!currentEditingKeyword) { showNotification('请先点击左侧关键词选择要编辑的规则', 'info'); return; }
+            let selected = [];
+            document.querySelectorAll('#numberSelector input:checked').forEach(cb => selected.push(cb.value));
+            customKeywordGroups[currentEditingKeyword] = selected;
+            saveKeywordGroups();
+            renderKeywordList();
+            showNotification(`已保存 ${currentEditingKeyword} 的 ${selected.length} 个号码`, 'success');
+        }
+        
+        // ==================== Token配置相关 ====================
+        function loadTokenConfig() {
+            githubToken = localStorage.getItem('githubToken') || '';
+            gistId = localStorage.getItem('gistId') || '';
+            updateCloudStatus();
+        }
+        
+        function saveTokenConfig() {
+            const tokenInput = $('githubTokenInput')?.value.trim();
+            const gistIdInput = $('gistIdInput')?.value.trim();
+            if (!tokenInput) { showTokenStatus('请输入GitHub Token', 'error'); return; }
+            githubToken = tokenInput;
+            gistId = gistIdInput || '';
+            localStorage.setItem('githubToken', githubToken);
+            if (gistId) localStorage.setItem('gistId', gistId);
+            else localStorage.removeItem('gistId');
+            showTokenStatus('Token配置已保存！', 'success');
+            setTimeout(() => { if($('tokenModal')) $('tokenModal').style.display = 'none'; }, 1500);
+            updateCloudStatus();
+        }
+        
+        function showTokenStatus(message, type) {
+            const statusDiv = $('tokenStatus');
+            if(statusDiv){ statusDiv.className = `token-status ${type}`; statusDiv.innerHTML = message; statusDiv.style.display = 'block'; }
+            setTimeout(() => { if(statusDiv) statusDiv.style.display = 'none'; }, 3000);
+        }
+        
+        function openTokenModal() {
+            if($('githubTokenInput')) $('githubTokenInput').value = githubToken;
+            if($('gistIdInput')) $('gistIdInput').value = gistId;
+            if($('tokenStatus')) { $('tokenStatus').className = 'token-status'; $('tokenStatus').style.display = 'none'; }
+            if($('tokenModal')) $('tokenModal').style.display = 'flex';
+        }
+        
+        function updateCloudStatus() {
+            const statusDiv = $('cloudStatus');
+            if(statusDiv){
+                if (githubToken) {
+                    statusDiv.innerHTML = gistId ? '☁️ 云端状态：已连接，可同步配置' : '☁️ 云端状态：Token已配置，首次上传将自动创建Gist';
+                    statusDiv.style.color = '#27ae60';
+                } else {
+                    statusDiv.innerHTML = '⚠️ 云端状态：未配置Token，请先点击"配置Token"';
+                    statusDiv.style.color = '#e74c3c';
+                }
+            }
+        }
+        
+        // ==================== 云端同步 ====================
+        function getCurrentConfig() {
+            return {
+                version: '2.5',
+                exportTime: getCurrentDateTime(),
+                separatorsRaw: $('customSeparators')?.value || separatorsToDisplayString(customSeparators),
+                separators: customSeparators,
+                keywordGroups: customKeywordGroups,
+                amountKeywords: customAmountKeywords
+            };
+        }
+        
+        function applyConfig(config) {
+            if (config.separatorsRaw) {
+                if($('customSeparators')) $('customSeparators').value = config.separatorsRaw;
+                customSeparators = parseSeparatorsFromInput(config.separatorsRaw);
+                if($('currentSeparatorsDisplay')) $('currentSeparatorsDisplay').innerText = customSeparators.join(' ');
+                localStorage.setItem('customSeparatorsRaw', config.separatorsRaw);
+            } else if (config.separators && Array.isArray(config.separators)) {
+                customSeparators = config.separators;
+                if($('customSeparators')) $('customSeparators').value = separatorsToDisplayString(customSeparators);
+                localStorage.setItem('customSeparatorsRaw', separatorsToDisplayString(customSeparators));
+            }
+            if (config.keywordGroups && typeof config.keywordGroups === 'object') {
+                customKeywordGroups = config.keywordGroups;
+                saveKeywordGroups();
+                renderKeywordList();
+            }
+            if (config.amountKeywords && Array.isArray(config.amountKeywords)) {
+                customAmountKeywords = normalizeAmountKeywords(config.amountKeywords);
+                ['各', '个'].forEach(t => {
+                    if (!customAmountKeywords.find(k => k.text === t)) {
+                        customAmountKeywords.unshift({ text: t, mode: 'auto' });
+                    }
+                });
+                saveAmountKeywords();
+            }
+            showNotification('配置已应用', 'success');
+        }
+        
+        async function uploadToGist() {
+            if (!githubToken) { alert('请先配置GitHub Token'); openTokenModal(); return; }
+            const config = getCurrentConfig();
+            const content = JSON.stringify(config, null, 2);
+            showNotification('⏳ 正在上传到云端...', 'info');
+            try {
+                let url = 'https://api.github.com/gists';
+                let method = 'POST';
+                let body = { description: '彩票统计系统识别配置', public: false, files: { 'lottery_recog_config.json': { content: content } } };
+                if (gistId) { url = `https://api.github.com/gists/${gistId}`; method = 'PATCH'; body = { files: { 'lottery_recog_config.json': { content: content } } }; }
+                const response = await fetch(url, { method: method, headers: { 'Authorization': `token ${githubToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+                if (!response.ok) { const error = await response.json(); throw new Error(error.message || '上传失败'); }
+                const result = await response.json();
+                if (!gistId && result.id) { gistId = result.id; localStorage.setItem('gistId', gistId); updateCloudStatus(); }
+                showNotification('✅ 配置已上传到云端！', 'success');
+            } catch (err) { alert('上传失败：' + err.message); }
+        }
+        
+        async function downloadFromGist() {
+            if (!githubToken) { alert('请先配置GitHub Token'); openTokenModal(); return; }
+            if (!gistId) { alert('没有找到Gist ID，请先点击"上传到云端"创建配置，或手动输入Gist ID'); openTokenModal(); return; }
+            showNotification('⏳ 正在从云端下载配置...', 'info');
+            try {
+                const response = await fetch(`https://api.github.com/gists/${gistId}`, { headers: { 'Authorization': `token ${githubToken}` } });
+                if (!response.ok) throw new Error('下载失败');
+                const gist = await response.json();
+                const configFile = gist.files['lottery_recog_config.json'];
+                if (!configFile) throw new Error('配置文件不存在');
+                const config = JSON.parse(configFile.content);
+                applyConfig(config);
+                showNotification('✅ 配置已从云端同步！', 'success');
+            } catch (err) { alert('下载失败：' + err.message); }
+        }
+        
+        function resetLocalConfig() {
+            if (confirm('确定要重置所有本地配置吗？')) {
+                initDefaultKeywordGroups();
+                customSeparators = ['-', '，', ',', '、', '.', ';', ' ', '/'];
+                customAmountKeywords = [{ text: '各', mode: 'auto' }, { text: '个', mode: 'auto' }];
+                if($('customSeparators')) $('customSeparators').value = separatorsToDisplayString(customSeparators);
+                if($('currentSeparatorsDisplay')) $('currentSeparatorsDisplay').innerText = customSeparators.join(' ');
+                localStorage.setItem('customSeparatorsRaw', separatorsToDisplayString(customSeparators));
+                saveKeywordGroups();
+                saveAmountKeywords();
+                renderKeywordList();
+                renderAmountKeywordList();
+                clearNumberSelector();
+                showNotification('本地配置已重置为默认', 'success');
+            }
+        }
+        
+        // ==================== 按钮事件处理 ====================
+        function onReportClick() {
+            let curTotal = parseFloat($('orderTotal')?.innerText) || 0;
+            if (curTotal <= 0) { alert('本次无有效金额，无需上报！'); return; }
+            let currentDetails = {};
+            amountInputs.forEach(inp => { 
+                let val = parseFloat(inp.value) || 0; 
+                if (val > 0) { let num = inp.dataset.number; currentDetails[num] = val; numberAccum[num] = (numberAccum[num] || 0) + val; }
+            });
+            addQuickReportRecord(curTotal, currentDetails);
+            let accum = Object.values(numberAccum).reduce((a,b) => a+b, 0);
+            if($('reportTotal')) $('reportTotal').innerText = curTotal.toFixed(2);
+            if($('accumulateTotal')) $('accumulateTotal').innerText = accum.toFixed(2);
+            amountInputs.forEach(inp => inp.value = '');
+            calculateOrderTotal();
+            alert(`✅ 一键上报成功！本次上报 ¥${curTotal.toFixed(2)} 已累计。`);
+        }
+        
+        function onSaveConfirm() {
+            let { details, totalAmount } = getCurrentAccumDetails();
+            if (totalAmount <= 0) { alert('当前累计金额为0'); if($('saveModal')) $('saveModal').style.display = 'none'; return; }
+            let remark = $('saveRemark')?.value.trim() || '无备注';
+            let recordId = Date.now().toString();
+            let reportRecordsSnapshot = JSON.parse(JSON.stringify(quickReportRecords));
+            savedRecords.push({ id: recordId, time: getCurrentDateTime(), totalAmount, details: { ...details }, remark, reportRecords: reportRecordsSnapshot });
+            saveRecordsToStorage();
+            numberAccum = {};
+            fixedTailAmounts = {};
+            saveFixedTailAmounts();
+            quickReportRecords = [];
+            saveQuickReportRecords();
+            renderCancelList();
+            if($('accumulateTotal')) $('accumulateTotal').innerText = '0.00';
+            if($('reportTotal')) $('reportTotal').innerText = '0.00';
+            if($('saveModal')) $('saveModal').style.display = 'none';
+            alert(`✅ 保存成功！总金额 ¥${totalAmount.toFixed(2)}，已保存。`);
+        }
+        
+        function onParseClick() {
+            let txt = $('recognizeText')?.value.trim();
+            if (!txt) { alert('请输入要识别的文本'); return; }
+            
+            let { results, errors } = parseAdvanced(txt);
+            
+            if (errors.length > 0) {
+                showParseErrorModal(errors);
+                return;
+            }
+            
+            if (Object.keys(results).length === 0) {
+                alert('未能识别出任何有效数据，请检查格式是否正确');
+                return;
+            }
+            
+            let { filled, total } = fillAmounts(results);
+            let { lineDetails, grandTotal } = parseAdvancedWithDetails(txt);
+            addRecognizeReportRecord(txt, grandTotal, lineDetails);
+            if($('parseResult')) { $('parseResult').innerHTML = `✅ 识别成功！共填充 ${filled} 个号码，总金额 ¥${total.toFixed(2)}`; $('parseResult').classList.add('show'); }
+            if($('recognizeText')) $('recognizeText').value = '';
+            setTimeout(() => { if($('parseResult')) $('parseResult').classList.remove('show'); }, 3000);
+        }
+        
+        function showParseErrorModal(errors) {
+            let body = $('parseErrorBody');
+            if (!body) return;
+            let html = '';
+            for (let e of errors) {
+                html += `<div class="parse-error-line">
+                    <div><span class="parse-error-line-no">第${e.line}行：</span><span class="parse-error-line-text">${escapeHtml(e.text)}</span></div>
+                    <div class="parse-error-reason">原因：${escapeHtml(e.reason)}</div>
+                </div>`;
+            }
+            body.innerHTML = html;
+            if($('parseErrorModal')) $('parseErrorModal').style.display = 'flex';
+        }
+        
+        function escapeHtml(str) {
+            return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        }
+        
+        async function onPasteClick() {
+            let textarea = $('recognizeText');
+            if (!textarea) return;
+            
+            if (!navigator.clipboard || !navigator.clipboard.readText) {
+                showNotification('浏览器不支持自动读取剪贴板，请手动 Ctrl+V', 'error');
+                textarea.focus();
+                return;
+            }
+            
+            try {
+                let text = await navigator.clipboard.readText();
+                if (!text || !text.trim()) {
+                    showNotification('剪贴板为空', 'info');
+                    return;
+                }
+                textarea.value = text;
+                showNotification('✅ 已粘贴剪贴板内容', 'success');
+                textarea.focus();
+            } catch (err) {
+                showNotification('无法读取剪贴板，请手动 Ctrl+V 粘贴', 'error');
+                textarea.focus();
+            }
+        }
+        
+        // ==================== 绑定所有事件 ====================
+        function bindAllEvents() {
+            if($('cancelOrderBtn')) $('cancelOrderBtn').onclick = showCancelModal;
+            if($('referenceBtn')) $('referenceBtn').onclick = showReferenceModal;
+            if($('waveBtn')) $('waveBtn').onclick = showWaveModal;
+            if($('formatManagerBtn')) $('formatManagerBtn').onclick = showFormatManagerModal;
+            if($('summaryBtn')) $('summaryBtn').onclick = showSummaryModal;
+            if($('saveBtn')) $('saveBtn').onclick = showSaveModal;
+            if($('historyBtn')) $('historyBtn').onclick = showHistoryModal;
+            if($('riskBtn')) $('riskBtn').onclick = showRiskModal;
+            if($('reportBtn')) $('reportBtn').onclick = onReportClick;
+            if($('parseBtn')) $('parseBtn').onclick = onParseClick;
+            if($('pasteBtn')) $('pasteBtn').onclick = onPasteClick;
+            if($('clearPanelBtn')) $('clearPanelBtn').onclick = () => { if($('recognizeText')) $('recognizeText').value = ''; };
+            if($('helpBtn')) $('helpBtn').onclick = () => { if($('formatHint')) $('formatHint').classList.toggle('show'); };
+            if($('clearOrderBtn')) $('clearOrderBtn').onclick = () => { if(confirm('确定要清空本单所有输入的金额吗？')){ amountInputs.forEach(inp=>inp.value=''); calculateOrderTotal(); } };
+            if($('clearAllBtn')) $('clearAllBtn').onclick = () => { if(confirm('确定要清空所有累计上报数据吗？（同时清空撤单记录和定尾单额度）')){ clearAccumulatedData(); alert('累计上报数据已清空，撤单记录和定尾单额度也已清空！'); } };
+            if($('confirmSaveBtn')) $('confirmSaveBtn').onclick = onSaveConfirm;
+            if($('cancelSaveBtn')) $('cancelSaveBtn').onclick = () => { if($('saveModal')) $('saveModal').style.display = 'none'; };
+            if($('closeSaveBtn')) $('closeSaveBtn').onclick = () => { if($('saveModal')) $('saveModal').style.display = 'none'; };
+            if($('refreshHistoryBtn')) $('refreshHistoryBtn').onclick = renderHistoryList;
+            if($('clearHistoryBtn')) $('clearHistoryBtn').onclick = () => { if(savedRecords.length===0){alert('暂无记录');return;} currentDeleteTarget='ALL'; if($('confirmMessage')) $('confirmMessage').innerText='确定要清除所有投注记录吗？此操作不可恢复！'; if($('confirmModal')) $('confirmModal').style.display='flex'; };
+            if($('exportHistoryBtn')) $('exportHistoryBtn').onclick = () => { let dataStr=JSON.stringify(savedRecords,null,2); let blob=new Blob([dataStr],{type:'application/json'}); let url=URL.createObjectURL(blob); let a=document.createElement('a'); a.href=url; a.download=`bet_records_${getCurrentDateTime().split(' ')[0]}.json`; a.click(); URL.revokeObjectURL(url); showNotification('导出成功','success'); };
+            if($('applyFilterBtn')) $('applyFilterBtn').onclick = renderSummaryView;
+            if($('viewNumbersBtn')) $('viewNumbersBtn').onclick = () => { if($('viewNumbersBtn')) $('viewNumbersBtn').classList.add('active'); if($('viewAnimalsBtn')) $('viewAnimalsBtn').classList.remove('active'); if($('numbersView')) $('numbersView').style.display='block'; if($('animalsView')) $('animalsView').style.display='none'; renderSummaryView(); };
+            if($('viewAnimalsBtn')) $('viewAnimalsBtn').onclick = () => { if($('viewAnimalsBtn')) $('viewAnimalsBtn').classList.add('active'); if($('viewNumbersBtn')) $('viewNumbersBtn').classList.remove('active'); if($('animalsView')) $('animalsView').style.display='block'; if($('numbersView')) $('numbersView').style.display='none'; renderSummaryView(); };
+            if($('refreshRiskBtn')) $('refreshRiskBtn').onclick = () => { renderRiskTable(); };
+            if($('copyAllContentBtn')) $('copyAllContentBtn').onclick = copyAllContent;
+            if($('sortByFixedRiskBtn')) $('sortByFixedRiskBtn').onclick = sortByFixedRisk;
+            if($('configTokenBtn')) $('configTokenBtn').onclick = openTokenModal;
+            if($('uploadToGistBtn')) $('uploadToGistBtn').onclick = uploadToGist;
+            if($('downloadFromGistBtn')) $('downloadFromGistBtn').onclick = downloadFromGist;
+            if($('resetLocalConfigBtn')) $('resetLocalConfigBtn').onclick = resetLocalConfig;
+            if($('saveSeparatorsBtn')) $('saveSeparatorsBtn').onclick = saveSeparators;
+            if($('addKeywordBtn')) $('addKeywordBtn').onclick = () => { let kw=$('newKeyword')?.value.trim(); if(!kw){alert('请输入关键词');return;} if(customKeywordGroups[kw]){alert('关键词已存在，请使用编辑功能');return;} customKeywordGroups[kw]=[]; saveKeywordGroups(); renderKeywordList(); selectKeywordForEdit(kw); if($('newKeyword')) $('newKeyword').value=''; showNotification(`已添加关键词 "${kw}"，请选择号码`,'success'); };
+            if($('restoreDefaultKeywords')) $('restoreDefaultKeywords').onclick = () => { if(confirm('恢复默认将覆盖当前所有规则，确定吗？')){ initDefaultKeywordGroups(); saveKeywordGroups(); renderKeywordList(); clearNumberSelector(); showNotification('已恢复默认','success'); } };
+            if($('saveKeywordNumbersBtn')) $('saveKeywordNumbersBtn').onclick = saveCurrentKeywordNumbers;
+            if($('clearAllRecordsBtn')) $('clearAllRecordsBtn').onclick = manualClearRecognizeReportRecords;
+            if($('saveTokenBtn')) $('saveTokenBtn').onclick = saveTokenConfig;
+            if($('cancelTokenBtn')) $('cancelTokenBtn').onclick = () => { if($('tokenModal')) $('tokenModal').style.display='none'; };
+            if($('confirmYesBtn')) $('confirmYesBtn').onclick = () => { if(currentDeleteTarget==='ALL') deleteAllRecords(); if($('confirmModal')) $('confirmModal').style.display='none'; currentDeleteTarget=null; };
+            if($('confirmNoBtn')) $('confirmNoBtn').onclick = () => { if($('confirmModal')) $('confirmModal').style.display='none'; currentDeleteTarget=null; };
+            if($('clearCancelRecordsBtn')) $('clearCancelRecordsBtn').onclick = clearAllCancelRecords;
+            if($('addAmountKeywordBtn')) $('addAmountKeywordBtn').onclick = addAmountKeyword;
+            if($('restoreDefaultAmountKeywords')) $('restoreDefaultAmountKeywords').onclick = restoreDefaultAmountKeywords;
+            
+            if($('closeModalBtn')) $('closeModalBtn').onclick = () => { if($('summaryModal')) $('summaryModal').style.display='none'; };
+            if($('closeReferenceBtn')) $('closeReferenceBtn').onclick = () => { if($('referenceModal')) $('referenceModal').style.display='none'; };
+            if($('closeWaveBtn')) $('closeWaveBtn').onclick = () => { if($('waveModal')) $('waveModal').style.display='none'; };
+            if($('closeHistoryBtn')) $('closeHistoryBtn').onclick = () => { if($('historyModal')) $('historyModal').style.display='none'; };
+            if($('closeDetailBtn')) $('closeDetailBtn').onclick = () => { if($('detailModal')) $('detailModal').style.display='none'; };
+            if($('closeRiskBtn')) $('closeRiskBtn').onclick = () => { if($('riskModal')) $('riskModal').style.display='none'; };
+            if($('closeFormatManagerBtn')) $('closeFormatManagerBtn').onclick = () => { if($('formatManagerModal')) $('formatManagerModal').style.display='none'; };
+            if($('closeCancelBtn')) $('closeCancelBtn').onclick = () => { if($('cancelModal')) $('cancelModal').style.display='none'; };
+            
+            if($('closeParseErrorBtn')) $('closeParseErrorBtn').onclick = () => { if($('parseErrorModal')) $('parseErrorModal').style.display='none'; };
+            if($('parseErrorOkBtn')) $('parseErrorOkBtn').onclick = () => { if($('parseErrorModal')) $('parseErrorModal').style.display='none'; };
+            
+            window.onclick = (e) => {
+                const modals = ['summaryModal', 'referenceModal', 'waveModal', 'historyModal', 'detailModal', 'riskModal', 'formatManagerModal', 'tokenModal', 'cancelModal', 'saveModal', 'confirmModal', 'parseErrorModal'];
+                modals.forEach(id => { const modal = $(id); if(e.target === modal && modal) modal.style.display = 'none'; });
+            };
+        }
+        
+        // ==================== 登录函数 ====================
+        function login() {
+            let u = $('loginUsername')?.value;
+            let p = $('loginPassword')?.value;
+            let errorDiv = $('loginError');
+            if (u === '123321' && p === '123321') {
+                if(errorDiv) errorDiv.classList.remove('show');
+                if($('loginOverlay')) $('loginOverlay').style.display = 'none';
+                if($('mainLayout')) $('mainLayout').style.display = 'flex';
+                
+                generateNumberGrid();
+                loadCustomConfig();
+                loadSavedRecords();
+                loadTokenConfig();
+                loadRecognizeReportRecords();
+                loadQuickReportRecords();
+                loadFixedTailAmounts();
+                bindAllEvents();
+                renderKeywordList();
+                renderAmountKeywordList();
+                showNotification('登录成功！', 'success');
+            } else {
+                if(errorDiv) errorDiv.classList.add('show');
+                if($('loginPassword')) $('loginPassword').value = '';
+            }
+        }
+        
+        window.login = login;
+        
+        document.addEventListener('keypress', function(e) { if (e.key === 'Enter') { if($('loginOverlay') && $('loginOverlay').style.display !== 'none') login(); } });
+        document.addEventListener('DOMContentLoaded', function() { 
+            if($('loginOverlay')) $('loginOverlay').style.display = 'flex';
+            if($('mainLayout')) $('mainLayout').style.display = 'none';
+        });
+    </script>
+</body>
+</html>
